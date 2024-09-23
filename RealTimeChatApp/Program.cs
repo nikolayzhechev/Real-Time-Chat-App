@@ -1,3 +1,4 @@
+using RealTimeChatApp.Hubs;
 internal class Program
 {
     private static void Main(string[] args)
@@ -10,7 +11,7 @@ internal class Program
         app.UseDefaultFiles();
         app.UseStaticFiles();
 
-        app.MapGet("/", () => "Hello World!");
+        app.MapHub<ChatHub>("/hub");
 
         app.Run();
     }
