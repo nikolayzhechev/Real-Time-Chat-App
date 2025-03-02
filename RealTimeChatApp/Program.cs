@@ -8,6 +8,14 @@ internal class Program
         builder.Services.AddSignalR();
 
         var app = builder.Build();
+
+        // HTTP request pipeline
+        if (!app.Environment.IsDevelopment())
+        {
+            app.UseExceptionHandler("/Error");
+            app.UseHsts();
+        }
+
         app.UseDefaultFiles();
         app.UseStaticFiles();
 
