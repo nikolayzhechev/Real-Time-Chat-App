@@ -9,7 +9,7 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 // The resolve.extensions array includes.js to imp.
 
 module.exports = {
-    entry: path.resolve(__dirname, "../client/chat-app/build/index.html"),
+    entry: path.resolve(__dirname, "../client/chat-app/src/index.tsx"),
     output: {
         path: path.resolve(__dirname, "wwwroot"),
         filename: "[name].[chunkhash].js",
