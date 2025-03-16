@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@microsoft/signalr": "^8.0.7",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
@@ -18,7 +19,9 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "concurrently \"npm run start:react\" \"npm run start:dotnet\"",
+    "start:react": "react-scripts start",
+    "start:dotnet": "cd ../../RealTimeChatApp && dotnet run",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -40,5 +43,11 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@babel/preset-react": "^7.26.3",
+    "babel-loader": "^10.0.0",
+    "concurrently": "^9.1.2",
+    "ts-loader": "^9.5.2"
   }
 }
