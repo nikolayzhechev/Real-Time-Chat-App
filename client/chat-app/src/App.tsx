@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import './App.css';
 import Home from './components/Home';
+import Login from './components/Login';
 import { connection, ensureConnected } from './SignalR/signalRConnection';
 
 function App() {
   const [messages, setMessages] = useState<string[]>([]);
   const [message, setMessage] = useState("");
   const [connectionLoader, setConnectionloader] = useState(Boolean);
+  const [username, setUsername] = useState('');
 
   useEffect(() => {
     setConnectionloader(false);
@@ -14,12 +16,12 @@ function App() {
       setMessages(prevMessages => [...prevMessages, `${user}: ${newMessage}`]);
     });
 
-    // Establish connection
+    // Establish SignalR connection
     ensureConnected();
     setConnectionloader(true);
 
     return () => {
-       console.log("Cleaning up SignalR connection...");
+      console.log("Cleaning up SignalR connection...");
       connection.off("messageReceived");
       connection.stop();
     };
@@ -27,8 +29,9 @@ function App() {
 
   const sendMessage = async () => {
     if (message.trim()) {
+      console.log("Sending message:", { username, message });
       try {
-        await connection.invoke("NewMessage", 1, message);
+        await connection.invoke("NewMessage", username, message);
         setMessage("");
       } catch (error) {
         console.log("Message not sent, error:", error);
@@ -36,9 +39,15 @@ function App() {
     }
   };
 
+  // Retreive username from child component Login
+  const handleUsername = (data: string): void => {
+    setUsername(data);
+  };
+
   return (
     <div className="App">
       <Home/>
+      <Login onLoginData={handleUsername}/>
       <div>
         {messages.map((msg, index) => (
           <p key={index}>{msg}</p>
