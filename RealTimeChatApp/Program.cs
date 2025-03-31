@@ -8,19 +8,6 @@ internal class Program
         // Add controllers to the service container
         builder.Services.AddControllers();
 
-        /*
-        // Add CORS services
-        builder.Services.AddCors(options =>
-        {
-            options.AddPolicy("AllowAll",
-                policy =>
-                {
-                    policy.AllowAnyOrigin()
-                          .AllowAnyMethod()
-                          .AllowAnyHeader();
-                });
-        });
-        */
         // Allow CORS for React
         builder.Services.AddCors(options =>
         {
