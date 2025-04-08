@@ -1,4 +1,8 @@
 using RealTimeChatApp.Hubs;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+
 internal class Program
 {
     private static void Main(string[] args)
@@ -7,6 +11,21 @@ internal class Program
 
         // Add controllers to the service container
         builder.Services.AddControllers();
+
+        // Add autnetication service
+        builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateIssuerSigningKey = true,
+                    // Hardcode secret key for testing
+                    // TODO: update secret key in appsettings.json or env variable
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes("DEVTEST_secret_key_01"))
+                };
+            });
 
         // Allow CORS for React
         builder.Services.AddCors(options =>
@@ -41,6 +60,7 @@ internal class Program
         app.UseStaticFiles();
 
         app.UseRouting();
+        app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
 
