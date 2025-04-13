@@ -4,6 +4,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Security.Cryptography;
+using RealTimeChatApp.Services;
+using RealTimeChatApp.Interfaces;
 
 namespace RealTimeChatApp.Authentication
 {
@@ -11,6 +13,13 @@ namespace RealTimeChatApp.Authentication
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
+        private readonly IAuthService _authService;
+
+        public AuthController(IAuthService authService)
+        {
+            _authService = authService;
+        }
+
         [HttpPost("login")]
         public IActionResult Login([FromBody] LoginRequest request)
         {
@@ -18,31 +27,21 @@ namespace RealTimeChatApp.Authentication
             // TODO: update with database user check
             if (request.Email == "test@example.com" & request.Password == "password1234")
             {
-                var tokenHandler = new JwtSecurityTokenHandler();
-                // Generate key
-                var keyBytes = new byte[32];
-                using (var rng = RandomNumberGenerator.Create())
-                {
-                    rng.GetBytes(keyBytes);
-                }
-                var key = new SymmetricSecurityKey(keyBytes);
-
-                var tokenDescriptor = new SecurityTokenDescriptor
-                {
-                    Subject = new ClaimsIdentity(new[]
-                    {
-                        new Claim(ClaimTypes.Name, request.Email)
-                    }),
-                    Expires = DateTime.UtcNow.AddHours(1),
-                    SigningCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature)
-                };
-                var token = tokenHandler.CreateToken(tokenDescriptor);
-                var tokenString = tokenHandler.WriteToken(token);
-
+                var tokenString = _authService.Login(request);
                 return Ok(new { token = tokenString });
             }
 
             return Unauthorized();
+        }
+        [HttpPost("register")]
+        public IActionResult Register([FromBody] RegisterRequest request)
+        {
+            var registration = _authService.Register(request);
+            if(!registration)
+            {
+                return BadRequest("User already exists.");
+            }
+            return Ok();
         }
     }
 }
