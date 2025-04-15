@@ -2,6 +2,8 @@ using RealTimeChatApp.Hubs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using RealTimeChatApp.Interfaces;
+using RealTimeChatApp.Services;
 
 internal class Program
 {
@@ -26,6 +28,8 @@ internal class Program
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes("DEVTEST_secret_key_01"))
                 };
             });
+
+        builder.Services.AddScoped<IAuthService, AuthService>();
 
         // Allow CORS for React
         builder.Services.AddCors(options =>
