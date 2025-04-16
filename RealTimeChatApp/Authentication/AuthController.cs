@@ -24,24 +24,36 @@ namespace RealTimeChatApp.Authentication
         public IActionResult Login([FromBody] LoginRequest request)
         {
             // Hardcode TEST credentials
-            // TODO: update with database user check
-            if (request.Email == "test@example.com" & request.Password == "password1234")
+            // TODO: update with database
+            var loginToken = _authService.Login(request);
+            if(loginToken != null)
             {
-                var tokenString = _authService.Login(request);
-                return Ok(new { token = tokenString });
+                return Ok(new { token = loginToken });
+            } else
+            {
+                return Unauthorized();
             }
-
-            return Unauthorized();
         }
         [HttpPost("register")]
         public IActionResult Register([FromBody] RegisterRequest request)
         {
-            var registration = _authService.Register(request);
-            if(!registration)
+            var registrationToken = _authService.Register(request);
+            if(registrationToken != null)
+            {
+                return Ok(new { token = registrationToken });
+            } else
             {
                 return BadRequest("User already exists.");
             }
-            return Ok();
+        }
+        [HttpPost("logout")]
+        public IActionResult Logout([FromBody] User user)
+        {
+            bool response = _authService.Logout(user);
+            if (response)
+                return Ok(user);
+
+            return NotFound(user);
         }
     }
 }
