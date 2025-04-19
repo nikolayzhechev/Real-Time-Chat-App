@@ -4,6 +4,10 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using RealTimeChatApp.Interfaces;
 using RealTimeChatApp.Services;
+using RealTimeChatApp.Data;
+using Microsoft.EntityFrameworkCore;
+using RealTimeChatApp.Models;
+using Microsoft.AspNetCore.Identity;
 
 internal class Program
 {
@@ -13,6 +17,10 @@ internal class Program
 
         // Add controllers to the service container
         builder.Services.AddControllers();
+
+        // EF db context registration
+        builder.Services.AddDbContext<AppDbContext>(options =>
+            options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
         // Add autnetication service
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
