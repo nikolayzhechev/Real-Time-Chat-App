@@ -34,7 +34,7 @@ namespace RealTimeChatApp.Services
         }
         public string Login(LoginRequest request)
         {
-            if (_users.Any(u => u.Email == request.Email & u.PasswordHash == request.Password))
+            if (_users.Any(u => u.Email == request.Email && BCrypt.Net.BCrypt.Verify(request.Password, u.PasswordHash)))
             {
                 string token = GetToken(request);
                 return token;
