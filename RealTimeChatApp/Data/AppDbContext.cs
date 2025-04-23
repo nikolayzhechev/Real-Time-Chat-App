@@ -13,5 +13,11 @@ namespace RealTimeChatApp.Data
         public DbSet<Chat> Chats { get; set; }
         public DbSet<ChatUser> ChatUsers { get; set; }
         public DbSet<Message> Messages { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<ChatUser>()
+                .HasKey(cu => new { cu.ChatId, cu.UserId });
+        }
     }
 }
