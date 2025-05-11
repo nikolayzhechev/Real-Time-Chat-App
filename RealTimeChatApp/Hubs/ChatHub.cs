@@ -1,37 +1,52 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
+using RealTimeChatApp.Data;
+using RealTimeChatApp.Models;
 
 namespace RealTimeChatApp.Hubs
 {
     public class ChatHub : Hub
     {
         private readonly ILogger<ChatHub> _logger;
+        private readonly AppDbContext _dbContext;
 
-        public ChatHub(ILogger<ChatHub> logger)
+        public ChatHub(ILogger<ChatHub> logger, AppDbContext dbContext)
         {
             _logger = logger;
+            _dbContext = dbContext;
         }
 
-        // broadcasts received messages to all connected users once the server receives them
-        // method to invoke from the client
-        public async Task NewMessage(string username, string message)
+        public async Task SendMessage(int chatId, string username, string messageContent)
         {
-            _logger.LogInformation("New message received from {User}: {Message}", username, message);
-
-            if (string.IsNullOrWhiteSpace(message))
+            if (string.IsNullOrWhiteSpace(messageContent))
             {
                 throw new HubException("Message cannot be empty.");
             }
 
-            if (username.Length > 20)
+            var senderId = Context.UserIdentifier;
+
+            var message = new Message
             {
-                throw new HubException("Username is too long.");
-            }
+                ChatId = chatId,
+                SenderId = senderId,
+                Content = messageContent,
+                SentAt = DateTime.UtcNow
+            };
+
+            _dbContext.Messages.Add(message);
+            await _dbContext.SaveChangesAsync();
 
             try
             {
-            await Clients.All.SendAsync("messageReceived", username, message);
-                
+                // Broadcast to clients in the chat
+                await Clients.Group(chatId.ToString()).SendAsync("ReceiveMessage", new
+                {
+                    ChatId = chatId,
+                    SenderId = senderId,
+                    Content = messageContent,
+                    SentAt = DateTime.UtcNow
+                });
+                _logger.LogInformation("New message received from {User}: {Message}", username, message);
             }
             catch (Exception ex)
             {
