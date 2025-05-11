@@ -6,6 +6,8 @@ using System.Text;
 using System.Security.Cryptography;
 using RealTimeChatApp.Services;
 using RealTimeChatApp.Interfaces;
+using RealTimeChatApp.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace RealTimeChatApp.Authentication
 {
@@ -14,10 +16,12 @@ namespace RealTimeChatApp.Authentication
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly DbContext _dbContext;
 
-        public AuthController(IAuthService authService)
+        public AuthController(IAuthService authService, AppDbContext dbContext)
         {
             _authService = authService;
+            _dbContext = dbContext;
         }
 
         [HttpPost("login")]
@@ -31,7 +35,7 @@ namespace RealTimeChatApp.Authentication
                 return Ok(new { token = loginToken });
             } else
             {
-                return Unauthorized();
+                return Unauthorized("Invalid username or password.");
             }
         }
         [HttpPost("register")]
