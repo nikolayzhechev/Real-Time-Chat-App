@@ -5,23 +5,26 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
+using RealTimeChatApp.Data;
+using RealTimeChatApp.Models;
 
 namespace RealTimeChatApp.Services
 {
     public class AuthService : IAuthService
     {
-        // TODO: update hardcoded value
-        // Testing only
-        private readonly List<User> _users = new List<User>
+        private readonly AppDbContext _dbContext;
+        public AuthService(AppDbContext dbContext)
         {
-            new User { Email = "test@example.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("password1234") }
-        };
+            _dbContext = dbContext;
+        }
+
         public string Register(RegisterRequest request)
         {
-            if (_users.Any(u => u.Email == request.Email))
+            if (_dbContext.AppUsers.Any(u => u.Email == request.Email))
+                // TODO: return user name already taken
                 return null;
 
-            _users.Add(new User
+            _dbContext.AppUsers.Add(new AppUser
                 {
                     Email = request.Email,
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
@@ -34,7 +37,8 @@ namespace RealTimeChatApp.Services
         }
         public string Login(LoginRequest request)
         {
-            if (_users.Any(u => u.Email == request.Email && BCrypt.Net.BCrypt.Verify(request.Password, u.PasswordHash)))
+            AppUser user = _dbContext.AppUsers.FirstOrDefault(u => u.Email == request.Email)!;
+            if (user != null && BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             {
                 string token = GetToken(request);
                 return token;
@@ -43,10 +47,10 @@ namespace RealTimeChatApp.Services
         }
         public bool Logout(User user)
         {
-            User foundUser = _users.Find(u => u.Email == user.Email);
+            AppUser foundUser = _dbContext.AppUsers.FirstOrDefault(u => u.Email == user.Email)!;
             if (foundUser != null)
             {
-                _users.Remove(foundUser);
+                _dbContext.AppUsers.Remove(foundUser);
                 return true;
             } else
             {
@@ -55,7 +59,7 @@ namespace RealTimeChatApp.Services
         }
         public User ValidateUser(string email, string password)
         {
-            var user = _users.FirstOrDefault(u => u.Email == email);
+            var user = _dbContext.AppUsers.FirstOrDefault(u => u.Email == email);
             if (user != null && BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             {
                 return user;
