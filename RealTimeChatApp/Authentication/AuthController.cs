@@ -27,12 +27,10 @@ namespace RealTimeChatApp.Authentication
         [HttpPost("login")]
         public IActionResult Login([FromBody] LoginRequest request)
         {
-            // Hardcode TEST credentials
-            // TODO: update with database
-            var loginToken = _authService.Login(request);
-            if(loginToken != null)
+            var loginResponse = _authService.Login(request);
+            if(loginResponse != null)
             {
-                return Ok(new { token = loginToken });
+                return Ok(new { response = loginResponse });
             } else
             {
                 return Unauthorized("Invalid username or password.");
