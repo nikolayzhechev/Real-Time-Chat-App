@@ -7,6 +7,8 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using RealTimeChatApp.Data;
 using RealTimeChatApp.Models;
+using System.Threading.Tasks;
+using RealTimeChatApp.Models.DTOs;
 
 namespace RealTimeChatApp.Services
 {
@@ -18,7 +20,7 @@ namespace RealTimeChatApp.Services
             _dbContext = dbContext;
         }
 
-        public string Register(RegisterRequest request)
+        public async Task<string> Register(RegisterRequest request)
         {
             if (_dbContext.AppUsers.Any(u => u.Email == request.Email))
                 // TODO: return user name already taken
@@ -26,22 +28,37 @@ namespace RealTimeChatApp.Services
 
             _dbContext.AppUsers.Add(new AppUser
                 {
+                    UserName = request.UserName,
                     Email = request.Email,
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
                 });
+
+            await _dbContext.SaveChangesAsync();
 
             LoginRequest currentLogin = new LoginRequest { Email = request.Email, Password = request.Password };
 
             string token = GetToken(currentLogin);
             return token;
         }
-        public string Login(LoginRequest request)
+        public AuthResponse Login(LoginRequest request)
         {
-            AppUser user = _dbContext.AppUsers.FirstOrDefault(u => u.Email == request.Email)!;
+            var user = _dbContext.AppUsers.FirstOrDefault(u => u.Email == request.Email)!;
             if (user != null && BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             {
                 string token = GetToken(request);
-                return token;
+
+                var userDto = new UserDto
+                {
+                    Id = user.Id,
+                    UserName = user.UserName,
+                    Email = user.Email
+                };
+
+                return new AuthResponse
+                {
+                    Token = token,
+                    User = userDto
+                };
             }
             return null;
         }
