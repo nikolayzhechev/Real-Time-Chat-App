@@ -78,6 +78,18 @@ internal class Program
 
         app.MapHub<ChatHub>("/hub");
 
+        // Apply EF db migrations at runtime
+        using (var scope = app.Services.CreateScope())
+        {
+            if (app.Environment.IsDevelopment())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                db.Database.Migrate();
+
+                app.UseOpenApi();
+                app.UseSwaggerUi();
+            }
+        }
         app.Run();
     }
 }
