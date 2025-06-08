@@ -16,8 +16,24 @@ namespace RealTimeChatApp.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
+
             modelBuilder.Entity<ChatUser>()
                 .HasKey(cu => new { cu.ChatId, cu.UserId });
+
+            modelBuilder.Entity<ChatUser>()
+                .HasOne(cu => cu.User)
+                .WithMany(u => u.ChatUsers)
+                .HasForeignKey(cu => cu.UserId);
+
+            modelBuilder.Entity<ChatUser>()
+                .HasOne(cu => cu.Chat)
+                .WithMany(c => c.ChatUsers)
+                .HasForeignKey(cu => cu.ChatId);
+
+            modelBuilder.Entity<ChatUser>()
+                .Property(cu => cu.JoinedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
         }
     }
 }
