@@ -18,6 +18,12 @@ internal class Program
         // Add controllers to the service container
         builder.Services.AddControllers();
 
+        builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddOpenApiDocument(config =>
+        {
+            config.Title = "RTCA";
+        });
+
         // EF db context registration
         builder.Services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -72,9 +78,9 @@ internal class Program
         app.UseStaticFiles();
 
         app.UseRouting();
+        app.UseHttpsRedirection();
         app.UseAuthentication();
         app.UseAuthorization();
-        app.MapControllers();
 
         app.MapHub<ChatHub>("/hub");
 
@@ -90,6 +96,8 @@ internal class Program
                 app.UseSwaggerUi();
             }
         }
+
+        app.MapControllers();
         app.Run();
     }
 }
