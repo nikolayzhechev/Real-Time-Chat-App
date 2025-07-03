@@ -37,9 +37,23 @@ internal class Program
                     ValidateIssuer = false,
                     ValidateAudience = false,
                     ValidateIssuerSigningKey = true,
-                    // Hardcode secret key for testing
-                    // TODO: update secret key in appsettings.json or env variable
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes("DEVTEST_secret_key_01"))
+                    IssuerSigningKey = new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+                };
+                // Allows SignalR to get the token from the query string
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+
+                        var path = context.HttpContext.Request.Path;
+                        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hub"))
+                        {
+                            context.Token = accessToken;
+                        }
+                        return Task.CompletedTask;
+                    }
                 };
             });
 
@@ -82,7 +96,7 @@ internal class Program
         app.UseAuthentication();
         app.UseAuthorization();
 
-        app.MapHub<ChatHub>("/hub");
+        app.MapHub<ChatHub>("/hub").RequireAuthorization();
 
         // Apply EF db migrations at runtime
         using (var scope = app.Services.CreateScope())
