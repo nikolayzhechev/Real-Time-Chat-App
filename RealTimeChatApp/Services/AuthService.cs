@@ -9,52 +9,56 @@ using RealTimeChatApp.Data;
 using RealTimeChatApp.Models;
 using System.Threading.Tasks;
 using RealTimeChatApp.Models.DTOs;
+using System.Text;
+using Microsoft.Extensions.Configuration;
 
 namespace RealTimeChatApp.Services
 {
     public class AuthService : IAuthService
     {
         private readonly AppDbContext _dbContext;
-        public AuthService(AppDbContext dbContext)
+        private readonly ILogger _logger;
+
+        public AuthService(AppDbContext dbContext, ILogger<AuthService> logger)
         {
             _dbContext = dbContext;
+            _logger = logger;
         }
 
         public async Task<string> Register(RegisterRequest request)
         {
             if (_dbContext.AppUsers.Any(u => u.Email == request.Email))
-                // TODO: return user name already taken
                 return null;
 
-            _dbContext.AppUsers.Add(new AppUser
-                {
-                    UserName = request.UserName,
-                    Email = request.Email,
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
-                });
+            var userEntry = _dbContext.AppUsers.Add(new AppUser
+            {
+                Username = request.UserName,
+                Email = request.Email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
+            });
 
             await _dbContext.SaveChangesAsync();
 
             LoginRequest currentLogin = new LoginRequest { Email = request.Email, Password = request.Password };
 
-            string token = GetToken(currentLogin);
+            string token = GetToken(currentLogin, userEntry.Entity.Id);
             return token;
         }
-        public AuthResponse Login(LoginRequest request)
+        public AuthResponseDTO Login(LoginRequest request)
         {
             var user = _dbContext.AppUsers.FirstOrDefault(u => u.Email == request.Email)!;
             if (user != null && BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             {
-                string token = GetToken(request);
-
                 var userDto = new UserDto
                 {
                     Id = user.Id,
-                    UserName = user.UserName,
+                    Username = user.Username,
                     Email = user.Email
                 };
 
-                return new AuthResponse
+                string token = GetToken(request, userDto.Id);
+
+                return new AuthResponseDTO
                 {
                     Token = token,
                     User = userDto
@@ -84,21 +88,22 @@ namespace RealTimeChatApp.Services
             return null;
         }
 
-        private string GetToken(LoginRequest request)
+        private string GetToken(LoginRequest request, int userId)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            // Generate key
-            var keyBytes = new byte[32];
-            using (var rng = RandomNumberGenerator.Create())
-            {
-                rng.GetBytes(keyBytes);
-            }
-            var key = new SymmetricSecurityKey(keyBytes);
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+                .AddJsonFile("appsettings.json").Build();
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"]));
+
+            _logger.LogInformation($"Key: {key.KeySize}");
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new[]
                 {
+                    new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
                     new Claim(ClaimTypes.Name, request.Email)
                 }),
                 Expires = DateTime.UtcNow.AddHours(1),
