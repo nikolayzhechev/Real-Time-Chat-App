@@ -23,7 +23,7 @@ namespace RealTimeChatApp.Hubs
                 throw new HubException("Message cannot be empty.");
             }
 
-            var senderId = Context.UserIdentifier;
+            var senderId = int.Parse(Context.UserIdentifier);
 
             var message = new Message
             {
@@ -39,19 +39,27 @@ namespace RealTimeChatApp.Hubs
             try
             {
                 // Broadcast to clients in the chat
-                await Clients.Group(chatId.ToString()).SendAsync("ReceiveMessage", new
-                {
-                    ChatId = chatId,
-                    SenderId = senderId,
-                    Content = messageContent,
-                    SentAt = DateTime.UtcNow
-                });
-                _logger.LogInformation("New message received from {User}: {Message}", username, message);
+                await AddToGroup(chatId.ToString());
+                await Clients.Group(chatId.ToString()).SendAsync("ReceiveMessage", message);
+                _logger.LogInformation("New message received from {User}: {Message}", username, messageContent);
             }
             catch (Exception ex)
             {
                 throw new HubException("An unexpected error occurred while sending your message.", ex);
             }
+        }
+        public async Task AddToGroup(string groupName)
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
+
+            await Clients.Group(groupName).SendAsync("Send", $"{Context.ConnectionId} has joined the group {groupName}.");
+        }
+
+        public async Task RemoveFromGroup(string groupName)
+        {
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
+
+            await Clients.Group(groupName).SendAsync("Send", $"{Context.ConnectionId} has left the group {groupName}.");
         }
     }
 }
