@@ -32,16 +32,32 @@ namespace RealTimeChatApp.Controllers
 
         // GET: api/Chats/5
         [HttpGet("getChat/{id}")]
-        public async Task<ActionResult<Chat>> GetChat(int id)
+        public async Task<ActionResult<ChatDTO>> GetChat(int id)
         {
-            var chat = await _dBcontext.Chats.FindAsync(id);
+            var chat = await _dBcontext.Chats
+                .Include(c => c.Messages)
+                .FirstOrDefaultAsync(c => c.Id == id);
 
             if (chat == null)
             {
                 return NotFound();
             }
 
-            return chat;
+            var chatDto = new ChatDTO
+            {
+                Id = chat.Id,
+                Messages = chat.Messages
+                    .OrderBy(m => m.SentAt)
+                    .Select(m => new MessageDTO
+                    {
+                        SenderId = m.SenderId,
+                        Content = m.Content,
+                        SentAt = m.SentAt
+                    })
+                    .ToList()
+            };
+
+            return chatDto;
         }
 
         [HttpGet("getChats/{userId}")]
