@@ -16,12 +16,12 @@ namespace RealTimeChatApp.Controllers
             _dbContext = dbContext;
         }
         // GET: Users
-        [HttpGet("getUsers")]
-        public async Task<ActionResult<IEnumerable<AppUser>>> GetUsers(string username)
+        [HttpGet("users/{id}")]
+        public async Task<ActionResult<IEnumerable<AppUser>>> GetUsers(int id)
         {
             try
             {
-                var users = await _dbContext.AppUsers.Where(u => u.UserName != username).ToListAsync();
+                var users = await _dbContext.AppUsers.Where(u => u.Id != id).ToListAsync();
                 return Ok(users);
             }
             catch (Exception ex)
@@ -30,7 +30,7 @@ namespace RealTimeChatApp.Controllers
             }
         }
         // GET user by id
-        [HttpGet("by-id/{id}")]
+        [HttpGet("user/{id}")]
         public async Task<ActionResult<AppUser>> GetUserById(int id)
         {
             var user = await _dbContext.AppUsers.FindAsync(id);
@@ -39,19 +39,21 @@ namespace RealTimeChatApp.Controllers
             return Ok(new AppUser
             {
                 Id = user.Id,
-                UserName = user.UserName,
+                Username = user.Username,
                 Email = user.Email
             });
         }
 
 
         // GET: Users/Details/5
+        [HttpGet("details{id}")]
         public ActionResult Details(int id)
         {
             return View();
         }
 
         // GET: Users/Edit/5
+        [HttpGet("edit{id}")]
         public ActionResult Edit(int id)
         {
             return View();
@@ -79,7 +81,7 @@ namespace RealTimeChatApp.Controllers
         }
 
         // POST: Users/Delete/5
-        [HttpPost]
+        [HttpPost("delete/{id}")]
         [ValidateAntiForgeryToken]
         public ActionResult Delete(int id, IFormCollection collection)
         {

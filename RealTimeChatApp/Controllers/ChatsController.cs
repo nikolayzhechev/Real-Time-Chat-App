@@ -31,7 +31,7 @@ namespace RealTimeChatApp.Controllers
         }
 
         // GET: api/Chats/5
-        [HttpGet("getChat/{id}")]
+        [HttpGet("chat/{id}")]
         public async Task<ActionResult<ChatDTO>> GetChat(int id)
         {
             var chat = await _dBcontext.Chats
@@ -46,6 +46,7 @@ namespace RealTimeChatApp.Controllers
             var chatDto = new ChatDTO
             {
                 Id = chat.Id,
+                Name = chat.Name,
                 Messages = chat.Messages
                     .OrderBy(m => m.SentAt)
                     .Select(m => new MessageDTO
@@ -54,13 +55,14 @@ namespace RealTimeChatApp.Controllers
                         Content = m.Content,
                         SentAt = m.SentAt
                     })
-                    .ToList()
+                    .ToList(),
+                CreatedAt = chat.CreatedAt
             };
 
-            return chatDto;
+            return Ok(chatDto);
         }
 
-        [HttpGet("getChats/{userId}")]
+        [HttpGet("chats/{userId}")]
         public async Task<ActionResult<IEnumerable<Chat>>> GetAllUserChats(int userId)
         {
             if (!_dBcontext.AppUsers.Any(u => u.Id == userId))
@@ -68,29 +70,29 @@ namespace RealTimeChatApp.Controllers
 
             try
             {
-            var chats = await _dBcontext.Chats
-                .Where(chat => chat.ChatUsers.Any(user => user.UserId == userId))
-                .Include(chat => chat.ChatUsers)
-                    .ThenInclude(cu => cu.User)
-                .Include(chat => chat.Messages) // preload messages
-                .ToListAsync();
+                var chats = await _dBcontext.Chats
+                   .Where(chat => chat.ChatUsers.Any(user => user.UserId == userId))
+                   .Include(chat => chat.ChatUsers)
+                       .ThenInclude(cu => cu.User)
+                   .Include(chat => chat.Messages) // preload messages
+                   .ToListAsync();
 
-            var chatDtos = chats.Select(chat => new ChatDTO
-            {
-                Id = chat.Id,
-                Name = chat.Name,
-                CreatedAt = chat.CreatedAt,
-                ParticipantUsernames = chat.ChatUsers.Select(u => u.User.Username).ToList(),
-                Messages = chat.Messages.Select(m => new MessageDTO
+                var chatDtos = chats.Select(chat => new ChatDTO
                 {
-                    Id = m.Id,
-                    SenderId = m.SenderId,
-                    Content = m.Content,
-                    SentAt = m.SentAt
-                }).ToList(),
-            }).ToList();
+                    Id = chat.Id,
+                    Name = chat.Name,
+                    CreatedAt = chat.CreatedAt,
+                    ParticipantUsernames = chat.ChatUsers.Select(u => u.User.Username).ToList(),
+                    Messages = chat.Messages.Select(m => new MessageDTO
+                    {
+                        Id = m.Id,
+                        SenderId = m.SenderId,
+                        Content = m.Content,
+                        SentAt = m.SentAt
+                    }).ToList(),
+                }).ToList();
 
-            return Ok(chatDtos);
+                return Ok(chatDtos);
             }
             catch (Exception ex)
             {
@@ -99,7 +101,6 @@ namespace RealTimeChatApp.Controllers
         }
 
         // PUT: api/Chats/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         public async Task<IActionResult> PutChat(int id, Chat chat)
         {
@@ -130,9 +131,8 @@ namespace RealTimeChatApp.Controllers
         }
 
         // POST: api/createChat
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost("createChat")]
-        public async Task<ActionResult<Chat>> CreateChat([FromBody] CreateChatRequestDTO chatRequest)
+        [HttpPost("chat")]
+        public async Task<ActionResult<ChatDTO>> CreateChat([FromBody] CreateChatRequestDTO chatRequest)
         {
             if (chatRequest.ParticipantIds == null || chatRequest.ParticipantIds.Count < 2)
             {
@@ -148,23 +148,32 @@ namespace RealTimeChatApp.Controllers
                 {
                     UserId = userId,
                     JoinedAt = DateTime.UtcNow
-                }).ToList()
+                }).ToList(),
+                CreatedAt = DateTime.UtcNow
             };
 
             _dBcontext.Chats.Add(chat);
             await _dBcontext.SaveChangesAsync();
 
-            return Ok(new { chat.Id });
+            var chatDto = new ChatDTO
+            {
+                Id = chat.Id,
+                Name = chat.Name,
+                CreatedAt = chat.CreatedAt,
+                Messages = new List<MessageDTO>()
+            };
+
+            return Ok(chatDto);
         }
 
-        // DELETE: api/Chats/5
-        [HttpDelete("{id}")]
+        // DELETE: api/delete/5
+        [HttpDelete("delete/{id}")]
         public async Task<IActionResult> DeleteChat(int id)
         {
             var chat = await _dBcontext.Chats.FindAsync(id);
             if (chat == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Chat is not found", status = 404 });
             }
 
             _dBcontext.Chats.Remove(chat);

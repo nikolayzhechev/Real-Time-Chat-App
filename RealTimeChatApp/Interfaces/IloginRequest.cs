@@ -4,5 +4,6 @@
     {
         public string Email { get; }
         public string Password { get; }
+        public int UserId { get; }
     }
 }
