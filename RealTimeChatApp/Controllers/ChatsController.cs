@@ -7,8 +7,10 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RealTimeChatApp.Data;
+using RealTimeChatApp.Interfaces;
 using RealTimeChatApp.Models;
 using RealTimeChatApp.Models.DTOs;
+using RealTimeChatApp.Services;
 
 namespace RealTimeChatApp.Controllers
 {
@@ -17,20 +19,22 @@ namespace RealTimeChatApp.Controllers
     public class ChatsController : ControllerBase
     {
         private readonly AppDbContext _dBcontext;
+        private readonly IChatService _chatService;
 
-        public ChatsController(AppDbContext dBcontext)
+        public ChatsController(AppDbContext dBcontext, IChatService chatService)
         {
             _dBcontext = dBcontext;
+            _chatService = chatService;
         }
 
-        // GET: api/Chats
+        // GET: api/chats
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Chat>>> GetChats()
         {
             return await _dBcontext.Chats.ToListAsync();
         }
 
-        // GET: api/Chats/5
+        // GET: api/chat/5
         [HttpGet("chat/{id}")]
         public async Task<ActionResult<ChatDTO>> GetChat(int id)
         {
@@ -62,7 +66,8 @@ namespace RealTimeChatApp.Controllers
             return Ok(chatDto);
         }
 
-        [HttpGet("chats/{userId}")]
+        // GET: api/1
+        [HttpGet("{userId}")]
         public async Task<ActionResult<IEnumerable<Chat>>> GetAllUserChats(int userId)
         {
             if (!_dBcontext.AppUsers.Any(u => u.Id == userId))
@@ -70,27 +75,7 @@ namespace RealTimeChatApp.Controllers
 
             try
             {
-                var chats = await _dBcontext.Chats
-                   .Where(chat => chat.ChatUsers.Any(user => user.UserId == userId))
-                   .Include(chat => chat.ChatUsers)
-                       .ThenInclude(cu => cu.User)
-                   .Include(chat => chat.Messages) // preload messages
-                   .ToListAsync();
-
-                var chatDtos = chats.Select(chat => new ChatDTO
-                {
-                    Id = chat.Id,
-                    Name = chat.Name,
-                    CreatedAt = chat.CreatedAt,
-                    ParticipantUsernames = chat.ChatUsers.Select(u => u.User.Username).ToList(),
-                    Messages = chat.Messages.Select(m => new MessageDTO
-                    {
-                        Id = m.Id,
-                        SenderId = m.SenderId,
-                        Content = m.Content,
-                        SentAt = m.SentAt
-                    }).ToList(),
-                }).ToList();
+                var chatDtos = await _chatService.GetMyUserChats(userId);
 
                 return Ok(chatDtos);
             }
@@ -100,7 +85,7 @@ namespace RealTimeChatApp.Controllers
             }
         }
 
-        // PUT: api/Chats/5
+        // PUT: api/chats/5
         [HttpPut("{id}")]
         public async Task<IActionResult> PutChat(int id, Chat chat)
         {
@@ -130,7 +115,7 @@ namespace RealTimeChatApp.Controllers
             return NoContent();
         }
 
-        // POST: api/createChat
+        // POST: api/chat
         [HttpPost("chat")]
         public async Task<ActionResult<ChatDTO>> CreateChat([FromBody] CreateChatRequestDTO chatRequest)
         {
@@ -139,29 +124,7 @@ namespace RealTimeChatApp.Controllers
                 return BadRequest("At least two participants are required.");
             }
 
-            var chatUser = _dBcontext.AppUsers.FirstOrDefault(u => u.Id == chatRequest.ParticipantIds[0]);
-
-            var chat = new Chat
-            {
-                Name = chatRequest.Title ?? $"Chat with {chatUser.Username}",
-                ChatUsers = chatRequest.ParticipantIds.Select(userId => new ChatUser
-                {
-                    UserId = userId,
-                    JoinedAt = DateTime.UtcNow
-                }).ToList(),
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _dBcontext.Chats.Add(chat);
-            await _dBcontext.SaveChangesAsync();
-
-            var chatDto = new ChatDTO
-            {
-                Id = chat.Id,
-                Name = chat.Name,
-                CreatedAt = chat.CreatedAt,
-                Messages = new List<MessageDTO>()
-            };
+            var chatDto = await _chatService.CreateChat(chatRequest);
 
             return Ok(chatDto);
         }

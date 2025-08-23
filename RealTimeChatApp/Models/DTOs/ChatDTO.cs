@@ -4,8 +4,9 @@
     {
         public int Id { get; set; }
         public string Name { get; set; }
+        public string? DirectKey { get; set; }
+        public bool IsGroup { get; set; }
         public DateTime CreatedAt { get; set; }
-
         public List<string> ParticipantUsernames { get; set; }
         public List<MessageDTO> Messages { get; set; }
     }

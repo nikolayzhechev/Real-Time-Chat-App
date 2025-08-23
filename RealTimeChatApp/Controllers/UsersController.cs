@@ -16,7 +16,7 @@ namespace RealTimeChatApp.Controllers
             _dbContext = dbContext;
         }
         // GET: Users
-        [HttpGet("users/{id}")]
+        [HttpGet("{id}")]
         public async Task<ActionResult<IEnumerable<AppUser>>> GetUsers(int id)
         {
             try
