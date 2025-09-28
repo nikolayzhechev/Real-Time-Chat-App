@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using RealTimeChatApp.Data;
 using RealTimeChatApp.Models;
+using RealTimeChatApp.Models.DTOs;
 
 namespace RealTimeChatApp.Hubs
 {
@@ -25,6 +26,12 @@ namespace RealTimeChatApp.Hubs
 
             var senderId = int.Parse(Context.UserIdentifier);
 
+            var sender = new AppUser
+            {
+                Id = senderId,
+                Username = username,
+            };
+
             var message = new Message
             {
                 ChatId = chatId,
@@ -36,11 +43,19 @@ namespace RealTimeChatApp.Hubs
             _dbContext.Messages.Add(message);
             await _dbContext.SaveChangesAsync();
 
+            var messageDto = new MessageDTO
+            {
+                Username = sender.Username,
+                Content = message.Content,
+                SentAt = message.SentAt,
+            };
+
             try
             {
                 // Broadcast to clients in the chat
                 await AddToGroup(chatId.ToString());
-                await Clients.Group(chatId.ToString()).SendAsync("ReceiveMessage", message);
+                await Clients.Group(chatId.ToString()).SendAsync("ReceiveMessage", messageDto);
+
                 _logger.LogInformation("New message received from {User}: {Message}", username, messageContent);
             }
             catch (Exception ex)
