@@ -1,72 +1,49 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, JSX } from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import './App.css';
-import Home from './components/Home';
-import Login from './components/Login';
-import { connection, ensureConnected } from './SignalR/signalRConnection';
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Chat from './pages/Chat';
+import NavBar from './components/NavBar';
+import { ensureConnected, stopConnection } from './SignalR/signalRConnection';
+import { isAuthenticated } from './services/auth';
+import { useAuth } from './contexts/authContext';
+import Register from './pages/Register';
 
 function App() {
-  const [messages, setMessages] = useState<string[]>([]);
-  const [message, setMessage] = useState("");
-  const [connectionLoader, setConnectionloader] = useState(Boolean);
-  const [username, setUsername] = useState('');
+  const [connectionLoader, setConnectionloader] = useState(false);
+  const { token } = useAuth();
+
+  const PrivateRoute = ({ children }: { children: JSX.Element }) => {
+    return isAuthenticated() ? children : <Navigate to="/login" />;
+  };
 
   useEffect(() => {
-    setConnectionloader(false);
-    connection.on("messageReceived", (user: string, newMessage: string) => {
-      setMessages(prevMessages => [...prevMessages, `${user}: ${newMessage}`]);
-    });
-
-    // Establish SignalR connection
-    ensureConnected();
-    setConnectionloader(true);
-
-    return () => {
-      console.log("Cleaning up SignalR connection...");
-      connection.off("messageReceived");
-      connection.stop();
-    };
-  }, []);
-
-  const sendMessage = async () => {
-    if (message.trim()) {
-      console.log("Sending message:", { username, message });
-      try {
-        await connection.invoke("NewMessage", username, message);
-        setMessage("");
-      } catch (error) {
-        console.log("Message not sent, error:", error);
-      }
+    if (token) {
+      setConnectionloader(true);
+      // Establish SignalR connection
+      ensureConnected(token);
+      setConnectionloader(false);
     }
-  };
-
-  // Retreive username from child component Login
-  const handleUsername = (data: string): void => {
-    setUsername(data);
-  };
+  }, [token]);
 
   return (
-    <div className="App">
-      <Home/>
-      <Login onLoginData={handleUsername}/>
-      <div>
-        {messages.map((msg, index) => (
-          <p key={index}>{msg}</p>
-        ))}
-      </div>
-      <input
-        type="text"
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        placeholder='Type a message'
-      />
-      {
-        connectionLoader
-          ?
-        <button onClick={sendMessage}>Send Message</button>
-          :
-        <p>Connecting...</p>
-      }
-    </div>
+    <Router>
+      <NavBar />
+      <Routes>
+        <Route path="/" element={<Home />}></Route>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route
+          path="/chat"
+          element={
+            <PrivateRoute>
+              <Chat />
+            </PrivateRoute>
+          }
+        />
+      </Routes>
+    </Router>
   );
 };
 
