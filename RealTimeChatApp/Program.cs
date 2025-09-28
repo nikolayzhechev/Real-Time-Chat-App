@@ -58,6 +58,7 @@ internal class Program
             });
 
         builder.Services.AddScoped<IAuthService, AuthService>();
+        builder.Services.AddScoped<IChatService, ChatService>();
 
         // Allow CORS for React
         builder.Services.AddCors(options =>
