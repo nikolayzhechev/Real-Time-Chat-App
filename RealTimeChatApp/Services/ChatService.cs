@@ -24,7 +24,7 @@ namespace RealTimeChatApp.Services
 
             var chat = new Chat
             {
-                Name = null, // chatRequest.Title ?? $"Chat with {chatUser.Username}",
+                Name = chatRequest.Title,
                 ChatUsers = chatRequest.ParticipantIds.Select(userId => new ChatUser
                 {
                     UserId = userId,
@@ -41,7 +41,7 @@ namespace RealTimeChatApp.Services
                 Id = chat.Id,
                 IsGroup = false,
                 DirectKey = directKey,
-                Name = null,
+                Name = chatRequest.Title,
                 CreatedAt = chat.CreatedAt,
                 Messages = new List<MessageDTO>()
             };

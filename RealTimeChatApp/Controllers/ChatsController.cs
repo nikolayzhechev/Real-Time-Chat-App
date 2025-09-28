@@ -56,6 +56,7 @@ namespace RealTimeChatApp.Controllers
                     .Select(m => new MessageDTO
                     {
                         SenderId = m.SenderId,
+                        Username = _dBcontext.AppUsers.Where(u => u.Id == m.SenderId).Select(u => u.Username).FirstOrDefault(),
                         Content = m.Content,
                         SentAt = m.SentAt
                     })
