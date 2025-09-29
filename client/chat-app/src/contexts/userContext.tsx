@@ -1,17 +1,34 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+
+type AuthData = {
+    id: number;
+    email: string;
+    username: string;
+    token: string;
+};
 
 type UserContextType = {
-    username: string;
-    setUsername: (name: string) => void;
+    authData: AuthData | null;
+    setAuthData: (authData: AuthData) => void;
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [username, setUsername] = useState('');
+    const [authData, setAuthDataState] = useState<AuthData | null>(null);
+
+    useEffect(() => {
+       const stored = localStorage.getItem("authData");
+       if (stored) setAuthDataState(JSON.parse(stored));
+    }, []);
+
+    const setAuthData = (data: AuthData) => {
+        setAuthDataState(data);
+        localStorage.setItem("authData", JSON.stringify(data));
+    };
 
     return (
-        <UserContext.Provider value={{ username, setUsername }}>
+        <UserContext.Provider value={{ authData, setAuthData }}>
           {children}
         </UserContext.Provider>
     );
