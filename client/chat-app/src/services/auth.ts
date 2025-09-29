@@ -1,4 +1,5 @@
 import { jwtDecode } from "jwt-decode";
+import { getConnection } from "../SignalR/signalRConnection";
 
 export const getToken = (): string | null => {
     return localStorage.getItem("token");
@@ -21,6 +22,8 @@ export const isAuthenticated = (): boolean => {
 
 export const logout = ():void => {
     localStorage.removeItem("token");
+    localStorage.removeItem("authData");
+    getConnection()?.off("Cleared SignalR event handlers.");
 };
 
 export const getUserEmail = (): string | null => {
