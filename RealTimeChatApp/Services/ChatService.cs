@@ -1,11 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using RealTimeChatApp.Authentication;
 using RealTimeChatApp.Data;
 using RealTimeChatApp.Interfaces;
 using RealTimeChatApp.Models;
 using RealTimeChatApp.Models.DTOs;
-using System;
-using System.IO;
 
 namespace RealTimeChatApp.Services
 {
@@ -40,6 +37,7 @@ namespace RealTimeChatApp.Services
             {
                 Id = chat.Id,
                 IsGroup = false,
+                Participants = chat.ChatUsers, //.Select(u => u.User.Username),
                 DirectKey = directKey,
                 Name = chatRequest.Title,
                 CreatedAt = chat.CreatedAt,
@@ -96,7 +94,7 @@ namespace RealTimeChatApp.Services
             var chatDtos = chats.Select(chat => new ChatDTO
             {
                 Id = chat.Id,
-                Name = BuildDisplayName(chat), 
+                Name = BuildDisplayName(chat),
                 IsGroup = chat.IsGroup,
                 CreatedAt = chat.CreatedAt,
                 ParticipantUsernames =
@@ -114,6 +112,38 @@ namespace RealTimeChatApp.Services
             }).ToList();
 
             return chatDtos;
+        }
+
+        public async Task<ChatDTO> GetChat(int chatId)
+        {
+            var chat = await _dBcontext.Chats
+                .Include(c => c.Messages)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == chatId);
+
+            if (chat == null)
+            {
+                return null;
+            }
+
+            var chatDto = new ChatDTO
+            {
+                Id = chat.Id,
+                Name = chat.Name,
+                Messages = chat.Messages
+                    .OrderBy(m => m.SentAt)
+                    .Select(m => new MessageDTO
+                    {
+                        SenderId = m.SenderId,
+                        Username = _dBcontext.AppUsers.Where(u => u.Id == m.SenderId).Select(u => u.Username).FirstOrDefault(),
+                        Content = m.Content,
+                        SentAt = m.SentAt
+                    })
+                    .ToList(),
+                CreatedAt = chat.CreatedAt
+            };
+
+            return chatDto;
         }
 
         public string SetDirectKey(CreateChatRequestDTO chatRequest)
