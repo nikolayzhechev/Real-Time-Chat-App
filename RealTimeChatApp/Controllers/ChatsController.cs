@@ -1,16 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RealTimeChatApp.Data;
 using RealTimeChatApp.Interfaces;
 using RealTimeChatApp.Models;
 using RealTimeChatApp.Models.DTOs;
-using RealTimeChatApp.Services;
 
 namespace RealTimeChatApp.Controllers
 {
@@ -31,38 +24,21 @@ namespace RealTimeChatApp.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Chat>>> GetChats()
         {
-            return await _dBcontext.Chats.ToListAsync();
+            var chats = await _dBcontext.Chats.AsNoTracking().ToListAsync();
+
+            return Ok(chats);
         }
 
         // GET: api/chat/5
         [HttpGet("chat/{id}")]
         public async Task<ActionResult<ChatDTO>> GetChat(int id)
         {
-            var chat = await _dBcontext.Chats
-                .Include(c => c.Messages)
-                .FirstOrDefaultAsync(c => c.Id == id);
+            ChatDTO chatDto = await _chatService.GetChat(id);
 
-            if (chat == null)
+            if (chatDto == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Chat is not found", status = 404 });
             }
-
-            var chatDto = new ChatDTO
-            {
-                Id = chat.Id,
-                Name = chat.Name,
-                Messages = chat.Messages
-                    .OrderBy(m => m.SentAt)
-                    .Select(m => new MessageDTO
-                    {
-                        SenderId = m.SenderId,
-                        Username = _dBcontext.AppUsers.Where(u => u.Id == m.SenderId).Select(u => u.Username).FirstOrDefault(),
-                        Content = m.Content,
-                        SentAt = m.SentAt
-                    })
-                    .ToList(),
-                CreatedAt = chat.CreatedAt
-            };
 
             return Ok(chatDto);
         }
