@@ -1,4 +1,4 @@
-import { ReactElement, useState, useEffect, useRef, useMemo, memo } from "react";
+import { useState, useEffect, memo } from "react";
 import IChat from "../interfaces/IChat";
 import { useUser } from '../contexts/userContext';
 
@@ -10,8 +10,10 @@ interface ChatsProps {
 const Chats = memo((props: ChatsProps) => {
     const { onSelectChat, refreshTrigger } = props;
     const [chats, setChats] = useState<IChat[]>([]);
+    const [filteredChats, setFilteredChats] = useState<IChat[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+    const [query, setQuery] = useState<string>("");
     const { authData } = useUser();
 
     const fetchChats = async (): Promise<void> => {
@@ -37,6 +39,14 @@ const Chats = memo((props: ChatsProps) => {
 
         fetchChats();
     }, [authData?.id, refreshTrigger]);
+
+    useEffect(() => {
+        const filtered = chats.filter(chat =>
+            chat.name.toLowerCase().includes(query.toLowerCase())
+        );
+
+        setFilteredChats(filtered);
+    }, [query]);
 
     const fetchChat = async (chatId: number): Promise<void> => {
         try {
@@ -71,18 +81,40 @@ const Chats = memo((props: ChatsProps) => {
 
     return (
         <div>
+            <form id="search-form"> 
+                <input 
+                    type="search" 
+                    id="query"
+                    name="q" 
+                    placeholder={`Search chats...`}
+                    onChange={(e) => {
+                        e.preventDefault();
+                        setQuery(e.target.value);
+                    }}
+                />
+            </form>
             <ul>
-                {
-                chats.length > 0 ?
-                    chats.map(chat => (
-                        <li>
-                            {chat.name}
-                            <button onClick={() => fetchChat(chat.id)}>Open Chat</button>
-                            <button onClick={() => handleChatDeletion(chat.id)} >X</button>
-                        </li>
-                    )) :
-                    <p>There are no existing chats. Please start a new one.</p>
-                }
+                {query.length < 2 ?
+                        chats.length > 0 ?
+                        chats.map(chat => (
+                            <li>
+                                {chat.name.replace(authData?.username!, "")}
+                                <button onClick={() => fetchChat(chat.id)}>Open Chat</button>
+                                <button onClick={() => handleChatDeletion(chat.id)} >X</button>
+                            </li>
+                        ))
+                        :
+                        <p>There are no existing chats. Please start a new one.</p>
+                    :
+                    filteredChats.length > 0 ?
+                        filteredChats.map(chat => (
+                            <li>
+                                {chat.name.replace(authData?.username!, "")}
+                                <button onClick={() => fetchChat(chat.id)}>Open Chat</button>
+                                <button onClick={() => handleChatDeletion(chat.id)} >X</button>
+                            </li>
+                        )) :
+                        <p>No search results.</p>}
             </ul>
         </div>
     );

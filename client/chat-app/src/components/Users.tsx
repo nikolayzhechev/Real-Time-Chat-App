@@ -1,16 +1,23 @@
-import { ReactElement, useState, useEffect, memo } from "react";
+import { useState, useEffect, memo } from "react";
 import { useUser } from '../contexts/userContext';
 import IAppUser from "../interfaces/IAppUser";
 import IChat from "../interfaces/IChat";
 
 interface UsersProps {
   onNewChatCreated: (chat: IChat) => void;
+  onFetchedUsers: (users: IAppUser[]) => void;
 }
 
-const Users = memo(({ onNewChatCreated }: UsersProps) => {
+const Users = memo(({ onNewChatCreated, onFetchedUsers }: UsersProps) => {
   const [usersList, setUsersList] = useState<IAppUser[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<IAppUser[]>([]);
+  const [filteredUsersList, setFilteredUsersList] = useState<IAppUser[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isGroup, setIsGroup] = useState<boolean>(false);
+  const [checkedItems, setcheckedItems] = useState<{ [key: number]: boolean }>({});
+  const [query, setQuery] = useState<string>("");
+  const [chatName, setChatName] = useState<string>("");
   const { authData } = useUser();
 
     useEffect(() => {
@@ -26,6 +33,7 @@ const Users = memo(({ onNewChatCreated }: UsersProps) => {
 
             const data: IAppUser[] = await response.json();
             setUsersList(data);
+            onFetchedUsers(data);
         } catch (error: any) {
           setError(error.message);
         } finally {
@@ -36,27 +44,83 @@ const Users = memo(({ onNewChatCreated }: UsersProps) => {
       fetchUsersLists();
     }, [authData?.id]);
 
+    useEffect(() => {
+      const filtered = usersList.filter(user =>
+        user.username.toLowerCase().includes(query.toLowerCase())
+      );
+
+      setFilteredUsersList(filtered);
+    }, [query]);
+
     const handleChatCreation = async (user: IAppUser): Promise<void> => {
       try {
-        const response: Response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/chats/chat`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem("token")}`
-          },
-          body: JSON.stringify({
-              title: `Chat with ${user.username} ${authData?.username}`,
-              participantIds: [user.id, authData?.id]
-          })
-        });
-        if (!response.ok) throw new Error(`Chat creation error: ${response.status}`);
+          const response: Response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/chats/chat`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${localStorage.getItem("token")}`
+            },
+            body: JSON.stringify({
+                title: `Chat with ${user.username} ${authData?.username}`,
+                participantIds: [user.id, authData?.id]
+            })
+          });
 
-        const data = await response.json();
-        onNewChatCreated(data);
-        console.log('Chat created successfully:', data);
+          if (!response.ok) throw new Error(`Chat creation error: ${response.status}`);
+
+          const data = await response.json();
+          onNewChatCreated(data);
+          console.log('Chat created successfully:', data);
       } catch (error: any) {
         setError(error.message);
       }
+    };
+
+    const handleGroupChatCreation = async (chatName: string, participants: number[]): Promise<void> => {
+      try {
+          const response: Response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/chats/chat`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${localStorage.getItem("token")}`
+            },
+            body: JSON.stringify({
+                title: chatName,
+                participantIds: participants
+            })
+          });
+
+          if (!response.ok) throw new Error(`Chat creation error: ${response.status}`);
+
+          const data = await response.json();
+          onNewChatCreated(data);
+          console.log('Chat created successfully:', data);
+      } catch (error: any) {
+        setError(error.message);
+      }
+    };
+
+    const handleSelectedUsers = (e: React.ChangeEvent<HTMLInputElement>, user: IAppUser): void => {
+      if (e.target.checked) {
+        setSelectedUsers(prev => [...prev, user])
+      } else {
+        removeUser(user);
+      }
+    };
+
+    const removeUser = (user: IAppUser): void => {
+        let toRemove: IAppUser | undefined = selectedUsers.find(u => u.username == user.username);
+        
+        if (toRemove) {
+          setSelectedUsers((prev) => prev.filter(user => user !== toRemove));
+        }
+    };
+    
+    const handleCheckboxChange = (id: number) => {
+      setcheckedItems(prev => ({
+        ...prev,
+        [id]: !prev[id]
+      }));
     };
 
     if (loading) return <p>Loading...</p>;
@@ -64,15 +128,64 @@ const Users = memo(({ onNewChatCreated }: UsersProps) => {
 
     return (
         <div>
-        <p>Users:</p>
+          <form id="search-form"> 
+            <input 
+                type="search"
+                id="query"
+                name="q"
+                placeholder={`Search users...`}
+                onChange={(e) => {
+                  e.preventDefault();
+                  setQuery(e.target.value);
+                }}
+            />
+          </form>
+          <p>Users:</p>
             <ul>
-              {usersList.map(user => (
+              {query.length < 2 ? usersList.map(user => (
+                <li key={user.id}>
+                  <label>
+                    {user.username}
+                    <input
+                      type="checkbox"
+                      name="usersCheckbox"
+                      checked={!!checkedItems[user.id]}
+                      onChange={(e) => {handleSelectedUsers(e, user); handleCheckboxChange(user.id);}}/>
+                  </label>
+                  <button onClick={() => {handleChatCreation(user); setIsGroup(false);}}>Start Chat</button>
+                </li>
+              ))
+              :
+              filteredUsersList.length > 0 ? filteredUsersList.map(user => (
                 <li key={user.id}>
                   <p>{user.username}</p>
-                  <button onClick={() => handleChatCreation(user)}>Start New Chat</button>
+                  <button onClick={() => {handleChatCreation(user); setIsGroup(false);}}>Start Chat</button>
                 </li>
+              )) : <p>No search results.</p>}
+            </ul>
+            <ul>
+            {selectedUsers.map((user) => (
+              <li>
+                {user.username}
+                <button onClick={(e) => {removeUser(user); handleCheckboxChange(user.id)}}>x</button>
+              </li>
               ))}
             </ul>
+            <div>
+              <label>Chat Name</label>
+              <input
+                type="text"
+                placeholder="Enter chat name"
+                value={chatName}
+                onChange={(e) => setChatName(e.target.value)}
+              ></input>
+              <button
+                onClick={() => {
+                  handleGroupChatCreation(chatName, selectedUsers.map(x => x.id));
+                  setIsGroup(true);}}
+                >New Chat
+              </button> 
+            </div>
         </div>
     )
 });
