@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RealTimeChatApp.Data;
 using RealTimeChatApp.Models;
@@ -15,7 +14,7 @@ namespace RealTimeChatApp.Controllers
         {
             _dbContext = dbContext;
         }
-        // GET: Users
+        // GET: Users except id
         [HttpGet("{id}")]
         public async Task<ActionResult<IEnumerable<AppUser>>> GetUsers(int id)
         {
@@ -29,7 +28,7 @@ namespace RealTimeChatApp.Controllers
                 return StatusCode(500, $"An error occurred while retrieving users. {ex.Message}");
             }
         }
-        // GET user by id
+        // GET: user by id
         [HttpGet("user/{id}")]
         public async Task<ActionResult<AppUser>> GetUserById(int id)
         {
@@ -44,6 +43,29 @@ namespace RealTimeChatApp.Controllers
             });
         }
 
+        // GET: users by search string
+        [HttpGet("search")]
+        public async Task<ActionResult<IEnumerable<AppUser>>> SearchUsers([FromQuery] string query)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(query))
+                {
+                    return Ok(new List<AppUser>());
+                }
+
+                var users = await _dbContext.AppUsers
+                    .Where(u => u.Username
+                    .ToUpper().Contains(query.ToUpper()))
+                    .ToListAsync();
+
+                return Ok(users);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
 
         // GET: Users/Details/5
         [HttpGet("details{id}")]
