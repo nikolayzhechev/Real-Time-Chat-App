@@ -122,7 +122,13 @@ function Chat (): ReactElement {
                               </label>
                           </div>
                         ))}
-
+                        <ul>
+                          { activeChat.isGroup ?
+                            activeChat.participants.map((p) => (
+                              p
+                            )) : activeChat.participants.find((p) => p !== authData?.id.toString())
+                          }
+                        </ul>
                         <button onClick={() => setIsGroup(!isGroup)}>Add Selected Participants to Chat</button>
                       </div>
                       :
@@ -147,6 +153,8 @@ function Chat (): ReactElement {
                       </p>
                   ))}
               </div>
+              {activeChat ? 
+              <div>
               <input
                   type="text"
                   value={message?.content}
@@ -159,7 +167,12 @@ function Chat (): ReactElement {
                   })} 
                   placeholder="Type a message"
               ></input>
-              <button onClick={sendMessage}>Send</button>
+              <button
+                onClick={sendMessage}
+              >Send</button>
+              </div>
+              : null
+              }
           </div>
       )
     }

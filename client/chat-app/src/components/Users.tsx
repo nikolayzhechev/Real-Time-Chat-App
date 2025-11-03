@@ -62,7 +62,8 @@ const Users = memo(({ onNewChatCreated, onFetchedUsers }: UsersProps) => {
             },
             body: JSON.stringify({
                 title: `Chat with ${user.username} ${authData?.username}`,
-                participantIds: [user.id, authData?.id]
+                participantIds: [user.id, authData?.id],
+                isGroup: isGroup
             })
           });
 
@@ -77,6 +78,10 @@ const Users = memo(({ onNewChatCreated, onFetchedUsers }: UsersProps) => {
     };
 
     const handleGroupChatCreation = async (chatName: string, participants: number[]): Promise<void> => {
+      if (!participants.includes(authData!.id)) {
+        participants.push(authData!.id);
+      }
+
       try {
           const response: Response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/chats/chat`, {
             method: 'POST',
@@ -86,7 +91,8 @@ const Users = memo(({ onNewChatCreated, onFetchedUsers }: UsersProps) => {
             },
             body: JSON.stringify({
                 title: chatName,
-                participantIds: participants
+                participantIds: participants,
+                isGroup: isGroup
             })
           });
 
@@ -102,7 +108,7 @@ const Users = memo(({ onNewChatCreated, onFetchedUsers }: UsersProps) => {
 
     const handleSelectedUsers = (e: React.ChangeEvent<HTMLInputElement>, user: IAppUser): void => {
       if (e.target.checked) {
-        setSelectedUsers(prev => [...prev, user])
+        setSelectedUsers(prev => [...prev, user]);
       } else {
         removeUser(user);
       }
@@ -150,16 +156,25 @@ const Users = memo(({ onNewChatCreated, onFetchedUsers }: UsersProps) => {
                       type="checkbox"
                       name="usersCheckbox"
                       checked={!!checkedItems[user.id]}
-                      onChange={(e) => {handleSelectedUsers(e, user); handleCheckboxChange(user.id);}}/>
+                      onChange={(e) => {
+                        handleSelectedUsers(e, user);
+                        handleCheckboxChange(user.id);
+                      }}/>
                   </label>
-                  <button onClick={() => {handleChatCreation(user); setIsGroup(false);}}>Start Chat</button>
+                  <button onClick={() => {
+                    setIsGroup(false);
+                    handleChatCreation(user);
+                  }}>Start Chat</button>
                 </li>
               ))
               :
               filteredUsersList.length > 0 ? filteredUsersList.map(user => (
                 <li key={user.id}>
                   <p>{user.username}</p>
-                  <button onClick={() => {handleChatCreation(user); setIsGroup(false);}}>Start Chat</button>
+                  <button onClick={() => {
+                    setIsGroup(false);
+                    handleChatCreation(user);
+                  }}>Start Chat</button>
                 </li>
               )) : <p>No search results.</p>}
             </ul>
@@ -167,7 +182,10 @@ const Users = memo(({ onNewChatCreated, onFetchedUsers }: UsersProps) => {
             {selectedUsers.map((user) => (
               <li>
                 {user.username}
-                <button onClick={(e) => {removeUser(user); handleCheckboxChange(user.id)}}>x</button>
+                <button onClick={(e) => {
+                  removeUser(user);
+                  handleCheckboxChange(user.id);
+                }}>x</button>
               </li>
               ))}
             </ul>
@@ -181,8 +199,10 @@ const Users = memo(({ onNewChatCreated, onFetchedUsers }: UsersProps) => {
               ></input>
               <button
                 onClick={() => {
+                  setIsGroup(true);
                   handleGroupChatCreation(chatName, selectedUsers.map(x => x.id));
-                  setIsGroup(true);}}
+                }}
+                disabled={chatName === "" ? true : false}
                 >New Chat
               </button> 
             </div>

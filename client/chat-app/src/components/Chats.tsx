@@ -97,7 +97,7 @@ const Chats = memo((props: ChatsProps) => {
                 {query.length < 2 ?
                         chats.length > 0 ?
                         chats.map(chat => (
-                            <li>
+                            <li key={chat.id}>
                                 {chat.name.replace(authData?.username!, "")}
                                 <button onClick={() => fetchChat(chat.id)}>Open Chat</button>
                                 <button onClick={() => handleChatDeletion(chat.id)} >X</button>
@@ -108,7 +108,7 @@ const Chats = memo((props: ChatsProps) => {
                     :
                     filteredChats.length > 0 ?
                         filteredChats.map(chat => (
-                            <li>
+                            <li key={chat.id}>
                                 {chat.name.replace(authData?.username!, "")}
                                 <button onClick={() => fetchChat(chat.id)}>Open Chat</button>
                                 <button onClick={() => handleChatDeletion(chat.id)} >X</button>

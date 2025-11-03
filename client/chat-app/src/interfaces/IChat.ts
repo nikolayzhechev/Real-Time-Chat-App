@@ -4,7 +4,9 @@ interface IChat {
     id: number,
     messages: IMessage[]
     name: string,
-    createdAt: string
+    participants: string[],
+    createdAt: string,
+    isGroup: boolean
 }
 
 export default IChat;
