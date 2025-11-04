@@ -94,6 +94,17 @@ function Chat (): ReactElement {
                   <p>Chat Name: {activeChat.name.replace(authData?.username!, "")}</p>
                   <button>Edit</button>
                   <p>Created At: {new Date(activeChat.createdAt).toLocaleString()}</p>
+                  <p>Participants:</p>
+                  <ul>
+                    {activeChat.isGroup ?
+                      activeChat.participants.filter((p) => p.user.username !== authData?.username).map((p) => (
+                        <li>
+                        {p.user.username}
+                        </li> 
+                        ))
+                        : activeChat.participants.find((p) => p.user.username !== authData?.username)?.user.username
+                    }
+                  </ul>
                   <div>
                     {
                       isGroup
@@ -125,8 +136,10 @@ function Chat (): ReactElement {
                         <ul>
                           { activeChat.isGroup ?
                             activeChat.participants.map((p) => (
-                              p
-                            )) : activeChat.participants.find((p) => p !== authData?.id.toString())
+                              <li>
+                                {p.user.username !== authData?.username}
+                              </li>
+                            )) : activeChat.participants.find((p) => p.user.username !== authData?.username)?.user.username
                           }
                         </ul>
                         <button onClick={() => setIsGroup(!isGroup)}>Add Selected Participants to Chat</button>
