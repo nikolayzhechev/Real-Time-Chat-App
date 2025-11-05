@@ -14,7 +14,6 @@ const Users = memo(({ onNewChatCreated, onFetchedUsers }: UsersProps) => {
   const [filteredUsersList, setFilteredUsersList] = useState<IAppUser[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [isGroup, setIsGroup] = useState<boolean>(false);
   const [checkedItems, setcheckedItems] = useState<{ [key: number]: boolean }>({});
   const [query, setQuery] = useState<string>("");
   const [chatName, setChatName] = useState<string>("");
@@ -52,7 +51,7 @@ const Users = memo(({ onNewChatCreated, onFetchedUsers }: UsersProps) => {
       setFilteredUsersList(filtered);
     }, [query]);
 
-    const handleChatCreation = async (user: IAppUser): Promise<void> => {
+    const handleChatCreation = async (user: IAppUser, isGroupParam: boolean): Promise<void> => {
       try {
           const response: Response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/chats/chat`, {
             method: 'POST',
@@ -63,7 +62,7 @@ const Users = memo(({ onNewChatCreated, onFetchedUsers }: UsersProps) => {
             body: JSON.stringify({
                 title: `Chat with ${user.username} ${authData?.username}`,
                 participantIds: [user.id, authData?.id],
-                isGroup: isGroup
+                isGroup: isGroupParam
             })
           });
 
@@ -77,7 +76,7 @@ const Users = memo(({ onNewChatCreated, onFetchedUsers }: UsersProps) => {
       }
     };
 
-    const handleGroupChatCreation = async (chatName: string, participants: number[]): Promise<void> => {
+    const handleGroupChatCreation = async (chatName: string, participants: number[], isGroupParam: boolean): Promise<void> => {
       if (!participants.includes(authData!.id)) {
         participants.push(authData!.id);
       }
@@ -92,7 +91,7 @@ const Users = memo(({ onNewChatCreated, onFetchedUsers }: UsersProps) => {
             body: JSON.stringify({
                 title: chatName,
                 participantIds: participants,
-                isGroup: isGroup
+                isGroup: isGroupParam
             })
           });
 
@@ -162,8 +161,7 @@ const Users = memo(({ onNewChatCreated, onFetchedUsers }: UsersProps) => {
                       }}/>
                   </label>
                   <button onClick={() => {
-                    setIsGroup(false);
-                    handleChatCreation(user);
+                    handleChatCreation(user, false);
                   }}>Start Chat</button>
                 </li>
               ))
@@ -172,8 +170,7 @@ const Users = memo(({ onNewChatCreated, onFetchedUsers }: UsersProps) => {
                 <li key={user.id}>
                   <p>{user.username}</p>
                   <button onClick={() => {
-                    setIsGroup(false);
-                    handleChatCreation(user);
+                    handleChatCreation(user, false);
                   }}>Start Chat</button>
                 </li>
               )) : <p>No search results.</p>}
@@ -199,12 +196,10 @@ const Users = memo(({ onNewChatCreated, onFetchedUsers }: UsersProps) => {
               ></input>
               <button
                 onClick={() => {
-                  setIsGroup(true);
-                  handleGroupChatCreation(chatName, selectedUsers.map(x => x.id));
+                  handleGroupChatCreation(chatName, selectedUsers.map(x => x.id), true);
                 }}
                 disabled={chatName === "" ? true : false}
-                >New Chat
-              </button> 
+              >New Chat</button> 
             </div>
         </div>
     )

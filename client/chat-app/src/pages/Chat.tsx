@@ -11,6 +11,7 @@ import IAppUser from "../interfaces/IAppUser";
 function Chat (): ReactElement {
     const [messages, setMessages] = useState<IMessage[]>([]);
     const [message, setMessage] = useState<IMessage | null>();
+    const [currentMessageContent, setCurrentMessageContent] = useState<string>("");
     const [chats, setChats] = useState<IChat[]>([]);
     const [chatRefreshTrigger, setChatRefreshTrigger] = useState(0);
     const [activeChat, setActiveChat] = useState<IChat | null>(null);
@@ -20,27 +21,30 @@ function Chat (): ReactElement {
     const [isGroup, setIsGroup] = useState<boolean>(false);
     const [activeUsers, setActiveUsers] = useState<IAppUser[]>([]);
     const [selectedGroupUsers, setSelectedGroupUsers] = useState<IAppUser[]>([]);
+    const [chatTitle, setChatTitle] = useState<string>("");
+    const [isEditingTitle, setIsEditingTitle] = useState<boolean>(false);
     const username: string | undefined = authData?.username;
     const connection = getConnection();
 
     useEffect(() => {
-        const handler: any = connection?.on("ReceiveMessage", (message: IMessage) => {
+        const handler: any = connection?.on("ReceiveMessage", (message: IMessage): void => {
           setMessages(prevMessages => [...prevMessages, message]);
         });
 
+        connection?.on("ReceiveMessage", handler);
         return () => {
           connection?.off("ReceiveMessage", handler); // Clean up when the component unmounts or re-renders
         };
-    }, []);
+    }, [activeChat]);
 
-    const sendMessage = async () => {
-        if (message?.content.trim()) {
-          console.log("Sending message:", { username, message });
+    const sendMessage = async (): Promise<void> => {
+        if (currentMessageContent.trim()) {
+          console.log("Sending message:", { username, content: currentMessageContent });
 
           try {
             console.log(activeChat?.id);
 
-            await connection?.invoke("SendMessage", activeChat?.id, username, message.content);
+            await connection?.invoke("SendMessage", activeChat?.id, username, currentMessageContent);
 
           } catch (error: any) {
             console.log("Message not sent, error:", error);
@@ -48,13 +52,20 @@ function Chat (): ReactElement {
           }
           finally
           {
-            message.content = "";
+            setCurrentMessageContent("");
           }
         }
     };
 
-    const handleSelectChat = useCallback((chat: IChat) => {
+    const handleSelectChat = useCallback((chat: IChat): void => {
         setActiveChat(chat);
+        setChatTitle(chat.name);
+
+        try {
+          connection?.invoke("AddToGroup", chat.id.toString());
+        } catch (err) {
+          console.log("Failed to join chat group", err);
+        }
     }, []);
 
     const handleSelectedGroupUsers = (e: ChangeEvent<HTMLInputElement>, user: IAppUser): void => {
@@ -71,6 +82,21 @@ function Chat (): ReactElement {
         if (toRemove) {
           setSelectedGroupUsers((prev) => prev.filter(user => user !== toRemove));
         }
+    };
+
+    const handleChatNameUpdate = async (chatId: number, chatTitle: string): Promise<void> => {
+      try {
+        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/chats/chat/${chatId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+          },
+          body: JSON.stringify(chatTitle)
+        });
+      } catch (err: any) {
+
+      }
     };
 
     if (error) return <p>Error: {error}</p>
@@ -91,8 +117,25 @@ function Chat (): ReactElement {
               <h2>Active chat:</h2>
               {activeChat ? (
                 <div>
-                  <p>Chat Name: {activeChat.name.replace(authData?.username!, "")}</p>
-                  <button>Edit</button>
+                  <div>
+                    <label>Chat Name: </label>
+                    {isEditingTitle ? 
+                        <input
+                          type="text"
+                          autoFocus
+                          value={chatTitle}
+                          onChange={(e) => setChatTitle(e.target.value)}
+                        />
+                      :
+                      <label>{activeChat.name.replace(authData?.username!, "")}</label>
+                    }
+                    <button
+                      onClick={() => {
+                        setIsEditingTitle(!isEditingTitle);
+                        handleChatNameUpdate(activeChat.id, chatTitle);
+                      }}>{isEditingTitle ? "Save" : "Edit"}
+                    </button>
+                  </div>
                   <p>Created At: {new Date(activeChat.createdAt).toLocaleString()}</p>
                   <p>Participants:</p>
                   <ul>
@@ -170,14 +213,8 @@ function Chat (): ReactElement {
               <div>
               <input
                   type="text"
-                  value={message?.content}
-                  onChange={(e) => setMessage({
-                    chatId: activeChat?.id!,
-                    senderId: authData?.id!,
-                    username: authData?.username!,
-                    content: e.target.value,
-                    sentAt: new Date()
-                  })} 
+                  value={currentMessageContent}
+                  onChange={(e) => setCurrentMessageContent(e.target.value)} 
                   placeholder="Type a message"
               ></input>
               <button
