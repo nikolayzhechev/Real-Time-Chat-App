@@ -19,14 +19,17 @@ namespace RealTimeChatApp.Services
         {
             var directKey = SetDirectKey(chatRequest);
 
+            var currentUsers = _dBcontext.AppUsers.Where(u => chatRequest.ParticipantIds.Contains(u.Id)).ToList();
+
             var chat = new Chat
             {
                 Name = chatRequest.Title,
-                ChatUsers = chatRequest.ParticipantIds.Select(userId => new ChatUser
+                ChatUsers = currentUsers.Select(cu => new ChatUser
                 {
-                    UserId = userId,
+                    UserId = cu.Id,
                     JoinedAt = DateTime.UtcNow
                 }).ToList(),
+                IsGroup = chatRequest.IsGroup,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -36,8 +39,19 @@ namespace RealTimeChatApp.Services
             var chatDto = new ChatDTO
             {
                 Id = chat.Id,
-                IsGroup = false,
-                Participants = chat.ChatUsers, //.Select(u => u.User.Username),
+                IsGroup = chat.IsGroup,
+                Participants = currentUsers
+                        .Select(cu => new ChatUser
+                        {
+                            UserId = cu.Id,
+                            User = new AppUser
+                            {
+                                Id = cu.Id,
+                                Username = cu.Username,
+                                Email = cu.Email
+                            }
+                        })
+                        .ToList(),
                 DirectKey = directKey,
                 Name = chatRequest.Title,
                 CreatedAt = chat.CreatedAt,
@@ -57,51 +71,26 @@ namespace RealTimeChatApp.Services
                 .Include(chat => chat.Messages) // preload messages
                 .ToListAsync();
 
-            string BuildDisplayName(Chat chat)
-            {
-                // 1:1 chat: show the other participant's name
-                if (!chat.IsGroup)
-                {
-                    var otherUser = chat.ChatUsers
-                        .FirstOrDefault(cu => cu.UserId != userId)?.User;
-
-                    if (otherUser == null)
-                        return "Unknown User";
-
-                    return otherUser.Username
-                        ?? otherUser.Email
-                        ?? "Unknown User";
-                }
-
-                // Group chat
-                if (!string.IsNullOrWhiteSpace(chat.Name))
-                    return chat.Name;
-
-                var others = chat.ChatUsers
-                    .Where(cu => cu.UserId != userId)
-                    .Select(cu => cu.User.Username ?? cu.User.Email ?? "Unknown")
-                    .OrderBy(n => n)
-                    .ToList();
-
-                if (others.Count == 0)
-                    return "Group";
-
-                var head = string.Join(", ", others.Take(3));
-                var extra = others.Count > 3 ? $" +{others.Count - 3}" : "";
-                return head + extra;
-            }
-
-            var chatDtos = chats.Select(chat => new ChatDTO
+            var chatDto = chats.Select(chat => new ChatDTO
             {
                 Id = chat.Id,
-                Name = BuildDisplayName(chat),
+                Name = chat.Name,
                 IsGroup = chat.IsGroup,
                 CreatedAt = chat.CreatedAt,
-                ParticipantUsernames =
+                Participants =
                     chat.ChatUsers
-                        .Select(cu => cu.User.Username)
+                        .Select(cu => new ChatUser
+                        {
+                            UserId = cu.UserId,
+                            User = new AppUser
+                            {
+                                Id = cu.User.Id,
+                                Username = cu.User.Username,
+                                Email = cu.User.Email
+                            },
+                            JoinedAt = cu.JoinedAt
+                        })
                         .ToList(),
-                // chat.ChatUsers.Where(u => u.ChatId == chat.Id).Select(u => u.User.Username).ToList(),
                 Messages = chat.Messages.Select(m => new MessageDTO
                 {
                     Id = m.Id,
@@ -111,12 +100,15 @@ namespace RealTimeChatApp.Services
                 }).ToList(),
             }).ToList();
 
-            return chatDtos;
+            return chatDto;
         }
 
         public async Task<ChatDTO> GetChat(int chatId)
         {
             var chat = await _dBcontext.Chats
+                .Include(c => c.ChatUsers)
+                    .ThenInclude(c => c.User)
+                .Include(chat => chat.Messages)
                 .Include(c => c.Messages)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == chatId);
@@ -130,6 +122,7 @@ namespace RealTimeChatApp.Services
             {
                 Id = chat.Id,
                 Name = chat.Name,
+                IsGroup = chat.IsGroup,
                 Messages = chat.Messages
                     .OrderBy(m => m.SentAt)
                     .Select(m => new MessageDTO
@@ -140,7 +133,18 @@ namespace RealTimeChatApp.Services
                         SentAt = m.SentAt
                     })
                     .ToList(),
-                CreatedAt = chat.CreatedAt
+                CreatedAt = chat.CreatedAt,
+                Participants = chat.ChatUsers.Select(cu => new ChatUser
+                {
+                    UserId = cu.UserId,
+                    User = new AppUser
+                    {
+                        Id = cu.User.Id,
+                        Username = cu.User.Username,
+                        Email = cu.User.Email
+                    },
+                    JoinedAt = cu.JoinedAt
+                }).ToList()
             };
 
             return chatDto;
