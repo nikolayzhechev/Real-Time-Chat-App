@@ -43,6 +43,38 @@ namespace RealTimeChatApp.Controllers
             return Ok(chatDto);
         }
 
+        // PATCH: api/chat/2
+        [HttpPatch("chat/{id}")]
+        public async Task<IActionResult> PatchChatTitle(int id, [FromBody] string newTitle)
+        {
+            var chat = await _dBcontext.Chats.FindAsync(id);
+
+            if (chat == null)
+            {
+                return NotFound(new { message = "Chat is not found", status = 404 });
+            }
+
+            chat.Name = newTitle;
+            _dBcontext.Entry(chat).State = EntityState.Modified;
+
+            try
+            {
+                await _dBcontext.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!ChatExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+            return NoContent();
+        }
+
         // GET: api/1
         [HttpGet("{userId}")]
         public async Task<ActionResult<IEnumerable<Chat>>> GetAllUserChats(int userId)
