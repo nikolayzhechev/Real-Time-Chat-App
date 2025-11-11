@@ -7,7 +7,7 @@
         public string? DirectKey { get; set; }
         public bool IsGroup { get; set; }
         public DateTime CreatedAt { get; set; }
-        public List<string> ParticipantUsernames { get; set; }
+        public ICollection<ChatUser> Participants { get; set; }
         public List<MessageDTO> Messages { get; set; }
     }
 }

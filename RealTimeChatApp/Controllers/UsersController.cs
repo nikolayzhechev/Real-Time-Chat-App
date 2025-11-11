@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using RealTimeChatApp.Data;
 using RealTimeChatApp.Models;
+using RealTimeChatApp.Models.DTOs;
 
 namespace RealTimeChatApp.Controllers
 {
@@ -45,7 +46,7 @@ namespace RealTimeChatApp.Controllers
 
         // GET: users by search string
         [HttpGet("search")]
-        public async Task<ActionResult<IEnumerable<AppUser>>> SearchUsers([FromQuery] string query)
+        public async Task<ActionResult<IEnumerable<UserDto>>> SearchUsers([FromQuery] string query)
         {
             try
             {
@@ -54,9 +55,14 @@ namespace RealTimeChatApp.Controllers
                     return Ok(new List<AppUser>());
                 }
 
-                var users = await _dbContext.AppUsers
-                    .Where(u => u.Username
-                    .ToUpper().Contains(query.ToUpper()))
+                IEnumerable<UserDto> users = await _dbContext.AppUsers
+                    .Where(u => u.Username.ToUpper().Contains(query.ToUpper()))
+                    .Select(u => new UserDto
+                    {
+                        Id = u.Id,
+                        Username = u.Username,
+                        Email = u.Email
+                    })
                     .ToListAsync();
 
                 return Ok(users);

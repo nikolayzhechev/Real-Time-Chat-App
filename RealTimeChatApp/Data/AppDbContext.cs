@@ -34,6 +34,11 @@ namespace RealTimeChatApp.Data
             modelBuilder.Entity<ChatUser>()
                 .Property(cu => cu.JoinedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            modelBuilder.Entity<Chat>()
+                .HasIndex(c => c.DirectKey)
+                .IsUnique()
+                .HasFilter("\"IsGroup\" = FALSE");
         }
     }
 }
