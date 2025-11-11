@@ -7,10 +7,10 @@ import Search from "../components/Search";
 import IChat from "../interfaces/IChat";
 import IMessage from "../interfaces/IMessage";
 import IAppUser from "../interfaces/IAppUser";
+import IChatUser from "../interfaces/IChatUser";
 
 function Chat (): ReactElement {
     const [messages, setMessages] = useState<IMessage[]>([]);
-    const [message, setMessage] = useState<IMessage | null>();
     const [currentMessageContent, setCurrentMessageContent] = useState<string>("");
     const [chats, setChats] = useState<IChat[]>([]);
     const [chatRefreshTrigger, setChatRefreshTrigger] = useState(0);
@@ -20,7 +20,8 @@ function Chat (): ReactElement {
     const [loading, setLoading] = useState<boolean>(true);
     const [isGroup, setIsGroup] = useState<boolean>(false);
     const [activeUsers, setActiveUsers] = useState<IAppUser[]>([]);
-    const [selectedGroupUsers, setSelectedGroupUsers] = useState<IAppUser[]>([]);
+    const [selectedGroupUsers, setSelectedGroupUsers] = useState<IChatUser[]>([]);
+    const [selectedActiveGroupUsers, setSelectedActiveGroupUsers] = useState<IChatUser[]>([]);
     const [chatTitle, setChatTitle] = useState<string>("");
     const [isEditingTitle, setIsEditingTitle] = useState<boolean>(false);
     const username: string | undefined = authData?.username;
@@ -59,7 +60,7 @@ function Chat (): ReactElement {
 
     const handleSelectChat = useCallback((chat: IChat): void => {
         setActiveChat(chat);
-        setChatTitle(chat.name);
+        setChatTitle(chat.name.replace(authData?.username!, ""));
 
         try {
           connection?.invoke("AddToGroup", chat.id.toString());
@@ -68,25 +69,33 @@ function Chat (): ReactElement {
         }
     }, []);
 
-    const handleSelectedGroupUsers = (e: ChangeEvent<HTMLInputElement>, user: IAppUser): void => {
+    const handleSelectedGroupUsers = (e: ChangeEvent<HTMLInputElement>, user: IChatUser): void => {
       if (e.target.checked) {
         setSelectedGroupUsers(prev => [...prev, user])
       } else {
-        removeUser(user);
+        removeUser(selectedGroupUsers, setSelectedGroupUsers, user.userId);
       }
     };
 
-    const removeUser = (user: IAppUser): void => {
-        let toRemove: IAppUser | undefined = selectedGroupUsers.find(u => u.username == user.username);
-        console.log(user.username);
+    const handleActiveSelectedGroupUsers = (e: ChangeEvent<HTMLInputElement>, user: IChatUser): void => {
+      if (e.target.checked) {
+        setSelectedActiveGroupUsers(prev => [...prev, user])
+      } else {
+        removeUser(selectedActiveGroupUsers, setSelectedActiveGroupUsers, user.userId);
+      }
+    };
+    
+    const removeUser = <T extends { userId: number }> (collection: T[], setCollection: React.Dispatch<React.SetStateAction<T[]>>, userId: number): void => {
+        let toRemove = collection.find(u => u.userId == userId);
+
         if (toRemove) {
-          setSelectedGroupUsers((prev) => prev.filter(user => user !== toRemove));
+          setCollection((prev) => prev.filter(user => user.userId !== toRemove!.userId));
         }
     };
 
     const handleChatNameUpdate = async (chatId: number, chatTitle: string): Promise<void> => {
       try {
-        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/chats/chat/${chatId}`, {
+        await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/chats/chat/${chatId}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -94,8 +103,40 @@ function Chat (): ReactElement {
           },
           body: JSON.stringify(chatTitle)
         });
-      } catch (err: any) {
 
+        setChatRefreshTrigger(prev => prev + 1);
+        setActiveChat(prev => prev && prev.id === chatId ? { ...prev, name: chatTitle } : prev);
+      } catch (err: any) {
+        console.log(err);
+        setError(err);
+      }
+    };
+
+    const handleUpdateChatUsers = async (chatId: number, userIdList: IChatUser[], action: string): Promise<void> => {
+      try {
+        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/chats/chat/${chatId}/users?action=${action}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+          },
+          body: JSON.stringify(userIdList.map(x => x.userId))
+        });
+
+        const updatedChat: IChat = await response.json();
+
+        if (!response.ok) {
+          throw new Error(`Failed to add users: ${response.status}`);
+        }
+
+        setActiveChat(updatedChat);
+        setChats(prev => prev.map(c => c.id === chatId ? updatedChat : c));
+        setChatRefreshTrigger(prev => prev + 1);
+      } catch (err: any) {
+        console.log(err);
+        setError(err);
+      } finally {
+        setSelectedGroupUsers([]);
       }
     };
 
@@ -131,7 +172,7 @@ function Chat (): ReactElement {
                     }
                     <button
                       onClick={() => {
-                        setIsEditingTitle(!isEditingTitle);
+                        setIsEditingTitle(prev => !prev);
                         handleChatNameUpdate(activeChat.id, chatTitle);
                       }}>{isEditingTitle ? "Save" : "Edit"}
                     </button>
@@ -141,9 +182,18 @@ function Chat (): ReactElement {
                   <ul>
                     {activeChat.isGroup ?
                       activeChat.participants.filter((p) => p.user.username !== authData?.username).map((p) => (
-                        <li>
-                        {p.user.username}
-                        </li> 
+                        <li key={p.userId}>
+                        <label>{p.user.username}</label>
+                        <input
+                          type="checkbox"
+                          name="activeGroupUsersCheckbox"
+                          onChange={(e) => handleActiveSelectedGroupUsers(e, {
+                            userId: p.user.id,
+                            user: p.user,
+                            chatId: activeChat.id,
+                            joinedAt: new Date()
+                          })}/>
+                        </li>
                         ))
                         : activeChat.participants.find((p) => p.user.username !== authData?.username)?.user.username
                     }
@@ -159,36 +209,41 @@ function Chat (): ReactElement {
                         />
                         <ul>
                           {selectedGroupUsers.map((user) => (
-                            <li>
-                              {user.username}
-                              <button onClick={() => removeUser(user)}>x</button>
+                            <li key={user.user.id}>
+                              {user.user.username}
+                              <button onClick={() => removeUser(selectedGroupUsers, setSelectedGroupUsers, user.userId)}>x</button>
                             </li>
                           ))}
                         </ul>
                         {activeUsers.map((user) => (
-                          <div>
+                          <div key={user.id}>
                               <label>
                                 {user.username}
                                 <input
                                   type="checkbox"
                                   name="groupCheckbox"
-                                  onChange={(e) => handleSelectedGroupUsers(e, user)}/>
+                                  onChange={(e) => handleSelectedGroupUsers(e, {
+                                    userId: user.id,
+                                    user: user,
+                                    chatId: activeChat.id,
+                                    joinedAt: new Date()
+                                  })}/>
                               </label>
                           </div>
                         ))}
-                        <ul>
-                          { activeChat.isGroup ?
-                            activeChat.participants.map((p) => (
-                              <li>
-                                {p.user.username !== authData?.username}
-                              </li>
-                            )) : activeChat.participants.find((p) => p.user.username !== authData?.username)?.user.username
-                          }
-                        </ul>
-                        <button onClick={() => setIsGroup(!isGroup)}>Add Selected Participants to Chat</button>
+                        <button onClick={() => {
+                          setIsGroup(prev => !prev);
+                          handleUpdateChatUsers(activeChat.id, selectedGroupUsers, "add");
+                          }}>Add Selected Participants to Chat</button>
                       </div>
                       :
-                      <button onClick={() => setIsGroup(!isGroup)}>Add More Participants to Chat</button>
+                      <div>
+                        <button onClick={() => setIsGroup(prev => !prev)}>Add More Participants to Chat</button>
+                        { selectedActiveGroupUsers.length > 0 ?  <button onClick={() => {
+                            handleUpdateChatUsers(activeChat.id, selectedActiveGroupUsers, "remove");
+                            }}>Remove Selected Participants from Chat</button>
+                        : null}
+                      </div>
                     }
                   </div>
                   {activeChat.messages.map((msg, index) => (
