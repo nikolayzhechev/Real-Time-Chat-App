@@ -75,6 +75,81 @@ namespace RealTimeChatApp.Controllers
             return NoContent();
         }
 
+        // PATH: api/chats/5/users
+        [HttpPatch("chat/{chatId}/users")]
+        public async Task<ActionResult<ChatDTO>> UpdateChatUsers(
+            int chatId,
+            [FromQuery] string action,
+            [FromBody] List<int> userIds)
+        {
+            var chat = await _dBcontext.Chats
+                .Include(c => c.ChatUsers)
+                    .ThenInclude(c => c.User)
+                .Include(chat => chat.Messages)
+                .FirstOrDefaultAsync(c => c.Id == chatId);
+
+            if (chat == null)
+            {
+                return NotFound(new { message = "Chat is not found", status = 404 });
+            }
+
+            var existingUserIds = chat.ChatUsers.Select(cu => cu.UserId).ToHashSet();
+
+            if (action.ToLower() == "add")
+            {
+                var newUserIds = userIds.Except(existingUserIds).ToList();
+
+                foreach (var userId in newUserIds)
+                {
+                    var user = await _dBcontext.AppUsers.FindAsync(userId);
+                    chat.ChatUsers.Add(new ChatUser
+                    {
+                        ChatId = chatId,
+                        UserId = userId,
+                        User = user,
+                        JoinedAt = DateTime.UtcNow
+                    });
+                }
+            }
+            else if (action.ToLower() == "remove")
+            {
+                foreach (var user in existingUserIds.Intersect(userIds).ToList())
+                {
+                    var chatUser = chat.ChatUsers.FirstOrDefault(cu => cu.UserId == user);
+                    if (chatUser != null)
+                    {
+                        chat.ChatUsers.Remove(chatUser);
+                    }
+                }
+            }
+            else
+            {
+                return BadRequest("Invalid action. Use 'add' or 'remove'.");
+            }
+
+            if (chat.ChatUsers.Count > 2)
+            {
+                chat.IsGroup = true;
+            }
+            else if (chat.ChatUsers.Count() == 2)
+            {
+                chat.IsGroup = false;
+            }
+
+            try
+            {
+                await _dBcontext.SaveChangesAsync();
+
+                ChatDTO chatDto = _chatService.CreateChatDTO(chat);
+
+                return Ok(chatDto);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error adding users to chat. {ex.Message + ex.StackTrace + ex.Source}");
+            }
+        }
+
         // GET: api/1
         [HttpGet("{userId}")]
         public async Task<ActionResult<IEnumerable<Chat>>> GetAllUserChats(int userId)

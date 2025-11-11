@@ -109,7 +109,7 @@ namespace RealTimeChatApp.Services
                 .Include(c => c.ChatUsers)
                     .ThenInclude(c => c.User)
                 .Include(chat => chat.Messages)
-                .Include(c => c.Messages)
+                //.Include(c => c.Messages)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == chatId);
 
@@ -118,34 +118,7 @@ namespace RealTimeChatApp.Services
                 return null;
             }
 
-            var chatDto = new ChatDTO
-            {
-                Id = chat.Id,
-                Name = chat.Name,
-                IsGroup = chat.IsGroup,
-                Messages = chat.Messages
-                    .OrderBy(m => m.SentAt)
-                    .Select(m => new MessageDTO
-                    {
-                        SenderId = m.SenderId,
-                        Username = _dBcontext.AppUsers.Where(u => u.Id == m.SenderId).Select(u => u.Username).FirstOrDefault(),
-                        Content = m.Content,
-                        SentAt = m.SentAt
-                    })
-                    .ToList(),
-                CreatedAt = chat.CreatedAt,
-                Participants = chat.ChatUsers.Select(cu => new ChatUser
-                {
-                    UserId = cu.UserId,
-                    User = new AppUser
-                    {
-                        Id = cu.User.Id,
-                        Username = cu.User.Username,
-                        Email = cu.User.Email
-                    },
-                    JoinedAt = cu.JoinedAt
-                }).ToList()
-            };
+            var chatDto = CreateChatDTO(chat);
 
             return chatDto;
         }
@@ -164,6 +137,40 @@ namespace RealTimeChatApp.Services
             var directKey = $"{a}|{b}";
 
             return directKey;
+        }
+
+        public ChatDTO CreateChatDTO(Chat chat)
+        {
+            var chatDto = new ChatDTO
+            {
+                Id = chat.Id,
+                Name = chat.Name,
+                IsGroup = chat.IsGroup,
+                Messages = chat.Messages
+                   .OrderBy(m => m.SentAt)
+                   .Select(m => new MessageDTO
+                   {
+                       SenderId = m.SenderId,
+                       Username = _dBcontext.AppUsers.Where(u => u.Id == m.SenderId).Select(u => u.Username).FirstOrDefault(),
+                       Content = m.Content,
+                       SentAt = m.SentAt
+                   })
+                   .ToList(),
+                CreatedAt = chat.CreatedAt,
+                Participants = chat.ChatUsers.Select(cu => new ChatUser
+                {
+                    UserId = cu.UserId,
+                    User = new AppUser
+                    {
+                        Id = cu.User.Id,
+                        Username = cu.User.Username,
+                        Email = cu.User.Email
+                    },
+                    JoinedAt = cu.JoinedAt
+                }).ToList()
+            };
+
+            return chatDto;
         }
     }
 }
