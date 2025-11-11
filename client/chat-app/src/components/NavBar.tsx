@@ -10,8 +10,6 @@ const NavBar: React.FC = () => {
     const { authData } = useUser();
     const navigate = useNavigate();
 
-    console.log(authData);
-
     const handleLogout = () => {
         logout();
         navigate('/');

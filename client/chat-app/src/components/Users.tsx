@@ -102,6 +102,11 @@ const Users = memo(({ onNewChatCreated, onFetchedUsers }: UsersProps) => {
           console.log('Chat created successfully:', data);
       } catch (error: any) {
         setError(error.message);
+      } finally {
+        setSelectedUsers([]);
+        setFilteredUsersList([]);
+        setcheckedItems({});
+        setChatName("");
       }
     };
 
@@ -177,7 +182,7 @@ const Users = memo(({ onNewChatCreated, onFetchedUsers }: UsersProps) => {
             </ul>
             <ul>
             {selectedUsers.map((user) => (
-              <li>
+              <li key={user.id}>
                 {user.username}
                 <button onClick={(e) => {
                   removeUser(user);
