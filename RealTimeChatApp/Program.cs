@@ -114,6 +114,11 @@ internal class Program
 
         app.UseRouting();
         app.UseHttpsRedirection();
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            FileProvider = new PhysicalFileProvider(Path.Combine(builder.Environment.ContentRootPath, "Uploads")),
+            RequestPath = "/uploads"
+        });
         app.UseAuthentication();
         app.UseAuthorization();
 
