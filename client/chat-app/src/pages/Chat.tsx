@@ -249,6 +249,16 @@ function Chat (): ReactElement {
                   {activeChat.messages.map((msg, index) => (
                       <p key={index}>
                         <strong>{msg.username}</strong>: {msg.content}
+                        <div>{
+                          msg.attachments.map((file) => (
+                            <div>{
+                            file.fileType.includes("image") ?
+                              <img src={`${process.env.REACT_APP_API_BASE_URL}/${file.fileUrl.replace("\\", "/")}`} alt={file.fileName}></img>
+                            :
+                            <a href={file.fileUrl} download>{file.fileName}</a>
+                        }</div>))
+                        }
+                        </div>
                         <small> | {new Date(msg.sentAt).toLocaleString()}</small>
                       </p>
                   ))}
@@ -271,7 +281,22 @@ function Chat (): ReactElement {
                   value={currentMessageContent}
                   onChange={(e) => setCurrentMessageContent(e.target.value)} 
                   placeholder="Type a message"
-              ></input>
+              />
+              <input
+                type="file"
+                multiple
+                name="file-input"
+                onChange={(e) => setAttachments(e.target.files)}
+              />
+              <ul>
+                { attachments !== null ? Array.from(attachments).map((file: File, index: number) => (
+                  <li key={index}>
+                    { file.name }
+                    <img src={URL.createObjectURL(file)}></img>
+                  </li>
+                )) : null
+                }
+              </ul>
               <button
                 onClick={sendMessage}
               >Send</button>

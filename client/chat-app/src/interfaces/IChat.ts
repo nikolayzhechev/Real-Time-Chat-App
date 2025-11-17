@@ -1,3 +1,4 @@
+import IAttachment from "./IAttachment";
 import IChatUser from "./IChatUser";
 import IMessage from "./IMessage";
 
@@ -7,7 +8,8 @@ interface IChat {
     name: string,
     participants: IChatUser[],
     createdAt: string,
-    isGroup: boolean
+    isGroup: boolean,
+    attachments: IAttachment[]
 }
 
 export default IChat;
