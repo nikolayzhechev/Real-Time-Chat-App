@@ -10,5 +10,6 @@
         public string Content { get; set; }
         public DateTime SentAt { get; set; }
         public bool IsRead { get; set; }
+        public ICollection<Attachment> Attachments { get; set; }
     }
 }

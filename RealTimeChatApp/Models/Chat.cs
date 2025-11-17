@@ -9,5 +9,6 @@
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public ICollection<Message> Messages { get; set; }
         public ICollection<ChatUser> ChatUsers { get; set; } = new List<ChatUser>();
+        public ICollection<Attachment> Attachments { get; set; }
     }
 }

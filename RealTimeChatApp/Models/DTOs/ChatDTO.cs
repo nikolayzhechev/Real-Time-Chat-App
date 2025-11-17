@@ -9,5 +9,6 @@
         public DateTime CreatedAt { get; set; }
         public ICollection<ChatUser> Participants { get; set; }
         public List<MessageDTO> Messages { get; set; }
+        public ICollection<AttachmentDTO> Attachments { get; set; }
     }
 }

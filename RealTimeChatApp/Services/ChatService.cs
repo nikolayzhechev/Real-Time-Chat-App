@@ -109,6 +109,7 @@ namespace RealTimeChatApp.Services
                 .Include(c => c.ChatUsers)
                     .ThenInclude(c => c.User)
                 .Include(chat => chat.Messages)
+                .Include(c => c.Attachments)
                 //.Include(c => c.Messages)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == chatId);
@@ -153,7 +154,17 @@ namespace RealTimeChatApp.Services
                        SenderId = m.SenderId,
                        Username = _dBcontext.AppUsers.Where(u => u.Id == m.SenderId).Select(u => u.Username).FirstOrDefault(),
                        Content = m.Content,
-                       SentAt = m.SentAt
+                       SentAt = m.SentAt,
+                       Attachments = chat.Attachments
+                           .Where(a => a.MessageId == m.Id)
+                           .Select(a => new AttachmentDTO
+                           {
+                               Id = a.Id,
+                               FileName = a.FileName,
+                               FileType = a.FileType,
+                               FileUrl = a.FileUrl,
+                               MessageId = a.MessageId
+                           }).ToList()
                    })
                    .ToList(),
                 CreatedAt = chat.CreatedAt,
@@ -167,7 +178,17 @@ namespace RealTimeChatApp.Services
                         Email = cu.User.Email
                     },
                     JoinedAt = cu.JoinedAt
-                }).ToList()
+                }).ToList(),
+                Attachments = chat.Attachments
+                    .Where(a => a.ChatId == chat.Id)
+                    .Select(a => new AttachmentDTO
+                    {
+                        Id = a.Id,
+                        FileName = a.FileName,
+                        FileType = a.FileType,
+                        FileUrl = a.FileUrl,
+                        MessageId = a.MessageId
+                    }).ToList()
             };
 
             return chatDto;

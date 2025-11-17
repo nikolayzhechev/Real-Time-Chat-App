@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RealTimeChatApp.Data;
 using RealTimeChatApp.Interfaces;
@@ -211,6 +211,74 @@ namespace RealTimeChatApp.Controllers
             var chatDto = await _chatService.CreateChat(chatRequest);
 
             return Ok(chatDto);
+        }
+
+        // POST: api/chat/attachment
+        [HttpPost("chat/{chatId}/attachment")]
+        [Authorize]
+        public async Task<IActionResult> AttachFile(List<IFormFile> files, int chatId)
+        {
+            var user = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (files == null || files.Count == 0)
+            {
+                return BadRequest("No files were uploaded.");
+            }
+
+            var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads", chatId.ToString());
+
+            if (!Directory.Exists(uploadPath))
+            {
+                Directory.CreateDirectory(uploadPath);
+            }
+
+            foreach (var file in files)
+            {
+                if (file.Length > 0)
+                {
+                    var filePath = Path.Combine(uploadPath, Path.GetFileNameWithoutExtension(file.FileName) + Path.GetExtension(file.FileName));
+                    using (var stream = System.IO.File.Create(filePath))
+                    {
+                        await file.CopyToAsync(stream);
+                    }
+                }
+            }
+
+            try
+            {
+                int messageId = _dBcontext.Messages
+                    .Where(m => m.ChatId == chatId && m.SenderId.ToString() == user)
+                    .OrderByDescending(m => m.SentAt)
+                    .Select(m => m.Id)
+                    .FirstOrDefault();
+
+                _dBcontext.Attachments.AddRange(files.Select(f => new Attachment
+                {
+                    ChatId = chatId,
+                    MessageId = messageId,
+                    FileName = f.FileName,
+                    FileType = f.ContentType,
+                    FileUrl = Path.Combine("Uploads", chatId.ToString(), f.FileName),
+                    UploadedAt = DateTime.UtcNow
+                }));
+
+                _dBcontext.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error saving attachments to database. {ex.Message}");
+            }
+
+            List<AttachmentDTO> attachmentDTOs = files.Select(f =>
+                new AttachmentDTO
+                {
+                    FileName = f.FileName,
+                    FileType = f.ContentType,
+                    FileUrl = Path.Combine("Uploads", chatId.ToString(), f.FileName)
+                }
+            ).ToList();
+
+            return Ok(attachmentDTOs);
         }
 
         // DELETE: api/delete/5

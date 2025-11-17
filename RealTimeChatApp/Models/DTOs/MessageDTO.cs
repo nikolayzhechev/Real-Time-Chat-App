@@ -7,5 +7,6 @@
         public string Username { get; set; }
         public string Content { get; set; }
         public DateTime SentAt { get; set; }
+        public List<AttachmentDTO> Attachments { get; set; }
     }
 }
