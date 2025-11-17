@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RealTimeChatApp.Data;
 using RealTimeChatApp.Models;
@@ -17,6 +18,7 @@ namespace RealTimeChatApp.Controllers
         }
         // GET: Users except id
         [HttpGet("{id}")]
+        [Authorize]
         public async Task<ActionResult<IEnumerable<AppUser>>> GetUsers(int id)
         {
             try
@@ -31,6 +33,7 @@ namespace RealTimeChatApp.Controllers
         }
         // GET: user by id
         [HttpGet("user/{id}")]
+        [Authorize]
         public async Task<ActionResult<AppUser>> GetUserById(int id)
         {
             var user = await _dbContext.AppUsers.FindAsync(id);
@@ -46,6 +49,7 @@ namespace RealTimeChatApp.Controllers
 
         // GET: users by search string
         [HttpGet("search")]
+        [Authorize]
         public async Task<ActionResult<IEnumerable<UserDto>>> SearchUsers([FromQuery] string query)
         {
             try
@@ -75,6 +79,7 @@ namespace RealTimeChatApp.Controllers
 
         // GET: Users/Details/5
         [HttpGet("details{id}")]
+        [Authorize]
         public ActionResult Details(int id)
         {
             return View();

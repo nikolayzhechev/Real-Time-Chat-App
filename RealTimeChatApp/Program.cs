@@ -6,8 +6,9 @@ using RealTimeChatApp.Interfaces;
 using RealTimeChatApp.Services;
 using RealTimeChatApp.Data;
 using Microsoft.EntityFrameworkCore;
-using RealTimeChatApp.Models;
-using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.FileProviders;
+using NSwag.Generation.Processors.Security;
+
 
 internal class Program
 {
@@ -22,23 +23,40 @@ internal class Program
         builder.Services.AddOpenApiDocument(config =>
         {
             config.Title = "RTCA";
+            config.Version = "v1";
+            config.Description = "Real-Time Chat Application API Documentation";
+            config.OperationProcessors.Add(new AspNetCoreOperationSecurityScopeProcessor("JWT"));
+            config.DocumentProcessors.Add(new SecurityDefinitionAppender("JWT", new NSwag.OpenApiSecurityScheme
+            {
+                Type = NSwag.OpenApiSecuritySchemeType.ApiKey,
+                Name = "Authorization",
+                In = NSwag.OpenApiSecurityApiKeyLocation.Header,
+                Description = "Type into the textbox: Bearer {your JWT token}."
+            }));
         });
 
         // EF db context registration
         builder.Services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-        // Add autnetication service
+        var key = builder.Configuration["Jwt:Key"];
+        var issuer = builder.Configuration["Jwt:Issuer"];
+        var audience = builder.Configuration["Jwt:Audience"];
+
+        // Add auth service
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
+                    ValidIssuer = issuer,
+                    ValidAudience = audience,
                     IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+                        Encoding.UTF8.GetBytes(key))
                 };
                 // Allows SignalR to get the token from the query string
                 options.Events = new JwtBearerEvents
@@ -56,6 +74,8 @@ internal class Program
                     }
                 };
             });
+
+        builder.Services.AddAuthorization();
 
         builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddScoped<IChatService, ChatService>();
@@ -111,6 +131,7 @@ internal class Program
                 app.UseSwaggerUi();
             }
         }
+
 
         app.MapControllers();
         app.Run();

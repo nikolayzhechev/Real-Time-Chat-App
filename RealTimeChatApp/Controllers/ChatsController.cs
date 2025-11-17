@@ -1,9 +1,11 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RealTimeChatApp.Data;
 using RealTimeChatApp.Interfaces;
 using RealTimeChatApp.Models;
 using RealTimeChatApp.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace RealTimeChatApp.Controllers
 {
@@ -22,6 +24,7 @@ namespace RealTimeChatApp.Controllers
 
         // GET: api/chats
         [HttpGet]
+        [Authorize]
         public async Task<ActionResult<IEnumerable<Chat>>> GetChats()
         {
             var chats = await _dBcontext.Chats.AsNoTracking().ToListAsync();
@@ -31,6 +34,7 @@ namespace RealTimeChatApp.Controllers
 
         // GET: api/chat/5
         [HttpGet("chat/{id}")]
+        [Authorize]
         public async Task<ActionResult<ChatDTO>> GetChat(int id)
         {
             ChatDTO chatDto = await _chatService.GetChat(id);
@@ -45,6 +49,7 @@ namespace RealTimeChatApp.Controllers
 
         // PATCH: api/chat/2
         [HttpPatch("chat/{id}")]
+        [Authorize]
         public async Task<IActionResult> PatchChatTitle(int id, [FromBody] string newTitle)
         {
             var chat = await _dBcontext.Chats.FindAsync(id);
@@ -75,8 +80,9 @@ namespace RealTimeChatApp.Controllers
             return NoContent();
         }
 
-        // PATH: api/chats/5/users
+        // PATCH: api/chats/5/users
         [HttpPatch("chat/{chatId}/users")]
+        [Authorize]
         public async Task<ActionResult<ChatDTO>> UpdateChatUsers(
             int chatId,
             [FromQuery] string action,
@@ -152,6 +158,7 @@ namespace RealTimeChatApp.Controllers
 
         // GET: api/1
         [HttpGet("{userId}")]
+        [Authorize]
         public async Task<ActionResult<IEnumerable<Chat>>> GetAllUserChats(int userId)
         {
             if (!_dBcontext.AppUsers.Any(u => u.Id == userId))
@@ -171,6 +178,7 @@ namespace RealTimeChatApp.Controllers
 
         // PUT: api/chats/5
         [HttpPut("{id}")]
+        [Authorize]
         public async Task<IActionResult> PutChat(int id, Chat chat)
         {
             if (id != chat.Id)
@@ -201,6 +209,7 @@ namespace RealTimeChatApp.Controllers
 
         // POST: api/chat
         [HttpPost("chat")]
+        [Authorize]
         public async Task<ActionResult<ChatDTO>> CreateChat([FromBody] CreateChatRequestDTO chatRequest)
         {
             if (chatRequest.ParticipantIds == null || chatRequest.ParticipantIds.Count < 2)
@@ -283,6 +292,7 @@ namespace RealTimeChatApp.Controllers
 
         // DELETE: api/delete/5
         [HttpDelete("delete/{id}")]
+        [Authorize]
         public async Task<IActionResult> DeleteChat(int id)
         {
             var chat = await _dBcontext.Chats.FindAsync(id);
