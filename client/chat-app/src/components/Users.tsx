@@ -27,7 +27,11 @@ const Users = memo(({ onNewChatCreated, onFetchedUsers }: UsersProps) => {
 
       const fetchUsersLists = async (): Promise<void> => {
         try {
-          const response: Response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/users/${authData?.id}`);
+          const response: Response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/users/${authData?.id}`, {
+              headers: {
+                  Authorization: `Bearer ${localStorage.getItem("token")}`
+              }
+          });
           if (!response.ok) throw new Error(`User retreival error: ${response.status}`);
 
             const data: IAppUser[] = await response.json();
@@ -192,7 +196,7 @@ const Users = memo(({ onNewChatCreated, onFetchedUsers }: UsersProps) => {
               ))}
             </ul>
             <div>
-              <label>Chat Name</label>
+              <label>Chat Name: </label>
               <input
                 type="text"
                 placeholder="Enter chat name"
@@ -203,7 +207,7 @@ const Users = memo(({ onNewChatCreated, onFetchedUsers }: UsersProps) => {
                 onClick={() => {
                   handleGroupChatCreation(chatName, selectedUsers.map(x => x.id), true);
                 }}
-                disabled={chatName === "" ? true : false}
+                disabled={chatName === "" || selectedUsers.length < 1 ? true : false}
               >New Chat</button> 
             </div>
         </div>

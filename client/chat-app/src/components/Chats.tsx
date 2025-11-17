@@ -21,7 +21,11 @@ const Chats = memo((props: ChatsProps) => {
         setError(null);
 
         try {
-            const response: Response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/chats/${authData?.id}`);
+            const response: Response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/chats/${authData?.id}`, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                }
+            });
             if (!response.ok) throw new Error(`Unable to retreive chats ${response.status}`);
 
             const data: IChat[] = await response.json();
@@ -50,7 +54,11 @@ const Chats = memo((props: ChatsProps) => {
 
     const fetchChat = async (chatId: number): Promise<void> => {
         try {
-            const response: Response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/chats/chat/${chatId}`);
+            const response: Response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/chats/chat/${chatId}`, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                }
+            });
             if (!response.ok) throw new Error(`Error when retreiving chat with id ${chatId}: ${response.status}`);
 
             const chat: IChat = await response.json();
@@ -66,7 +74,10 @@ const Chats = memo((props: ChatsProps) => {
 
         try {
             await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/chats/delete/${chatId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                }
             });
         } catch (error: any) {
             setError(error.message);

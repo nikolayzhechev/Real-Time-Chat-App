@@ -24,6 +24,7 @@ function Chat (): ReactElement {
     const [selectedActiveGroupUsers, setSelectedActiveGroupUsers] = useState<IChatUser[]>([]);
     const [chatTitle, setChatTitle] = useState<string>("");
     const [isEditingTitle, setIsEditingTitle] = useState<boolean>(false);
+    const [attachments, setAttachments] = useState<FileList | null>(null);
     const username: string | undefined = authData?.username;
     const connection = getConnection();
 
@@ -43,19 +44,40 @@ function Chat (): ReactElement {
           console.log("Sending message:", { username, content: currentMessageContent });
 
           try {
-            console.log(activeChat?.id);
-
             await connection?.invoke("SendMessage", activeChat?.id, username, currentMessageContent);
-
+            
           } catch (error: any) {
             console.log("Message not sent, error:", error);
             setError(error.message);
           }
           finally
           {
+            if (attachments) {
+              await sendAttachment();
+            }
             setCurrentMessageContent("");
           }
         }
+    };
+
+    const sendAttachment = async (): Promise<void> => {
+      const data = new FormData();
+
+      if (attachments !== null) {
+        const files = Array.from(attachments);
+
+        for (const file of files) {
+          data.append('files', file, file.name)
+        }
+
+        await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/chats/chat/${activeChat?.id}/attachment`, {
+          method: 'POST',
+          body: data,
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+          }
+        })
+      }
     };
 
     const handleSelectChat = useCallback((chat: IChat): void => {
@@ -137,6 +159,7 @@ function Chat (): ReactElement {
         setError(err);
       } finally {
         setSelectedGroupUsers([]);
+        setSelectedActiveGroupUsers([]);
       }
     };
 

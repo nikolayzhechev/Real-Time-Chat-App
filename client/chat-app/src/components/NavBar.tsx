@@ -29,6 +29,7 @@ const NavBar: React.FC = () => {
                     <ul>
                         <li><button><NavLink to="/chat">Chat</NavLink></button></li>
                         <li><button onClick={handleLogout}>Logout</button></li>
+                        <li><button><NavLink to="/profile">Profile</NavLink></button></li>
                     </ul>
                 </div>
                     :

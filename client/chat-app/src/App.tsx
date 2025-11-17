@@ -9,6 +9,7 @@ import { ensureConnected, stopConnection } from './SignalR/signalRConnection';
 import { isAuthenticated } from './services/auth';
 import { useAuth } from './contexts/authContext';
 import Register from './pages/Register';
+import Profile from './pages/Profile';
 
 function App() {
   const [connectionLoader, setConnectionloader] = useState(false);
@@ -34,6 +35,7 @@ function App() {
         <Route path="/" element={<Home />}></Route>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/profile" element={<Profile />} />
         <Route
           path="/chat"
           element={

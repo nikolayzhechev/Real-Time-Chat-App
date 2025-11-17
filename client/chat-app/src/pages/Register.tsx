@@ -48,9 +48,9 @@ function Register(): ReactElement {
         <form onSubmit={handleRegister}>
           <label htmlFor="username">Enter your email and password to register:</label>
           <input type="text" id="username" name="username" value={userName} onChange={handleChange} required placeholder="Username"/>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" />
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" />
-          <input type="password" value={repeatPassword} onChange={e => setRepeatPassword(e.target.value)} placeholder="Repeat Password" />
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" required/>
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" required/>
+          <input type="password" value={repeatPassword} onChange={e => setRepeatPassword(e.target.value)} placeholder="Repeat Password" required/>
           {error && <p style={{ color: 'red' }}>{error}</p>}
           <input type="submit" value="Register" />
         </form>

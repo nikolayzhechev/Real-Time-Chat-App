@@ -20,7 +20,11 @@ function Search<T>({collection, onResults}: SearchProps<T>) {
             setLoading(true);
             try {
                 const response: Response = await fetch(
-                    `${process.env.REACT_APP_API_BASE_URL}/api/${collection}/search?query=${encodeURIComponent(query)}`);
+                    `${process.env.REACT_APP_API_BASE_URL}/api/${collection}/search?query=${encodeURIComponent(query)}`, {
+                        headers: {
+                            Authorization: `Bearer ${localStorage.getItem("token")}`
+                        }
+                });
                 const data: T[] = await response.json();
 
                 if (!response.ok) throw new Error(`${response.status}`);
