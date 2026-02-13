@@ -30,21 +30,25 @@ function App() {
 
   return (
     <Router>
-      <NavBar />
-      <Routes>
-        <Route path="/" element={<Home />}></Route>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route
-          path="/chat"
-          element={
-            <PrivateRoute>
-              <Chat />
-            </PrivateRoute>
-          }
-        />
-      </Routes>
+      <div className="app-shell">
+        <NavBar />
+        <main className="app-main">
+          <Routes>
+            <Route path="/" element={<Home />}></Route>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route
+              path="/chat"
+              element={
+                <PrivateRoute>
+                  <Chat />
+                </PrivateRoute>
+              }
+            />
+          </Routes>
+        </main>
+      </div>
     </Router>
   );
 };

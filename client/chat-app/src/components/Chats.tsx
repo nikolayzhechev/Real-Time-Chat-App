@@ -91,9 +91,10 @@ const Chats = memo((props: ChatsProps) => {
     if (error) return <p>Error: {error}</p>;
 
     return (
-        <div>
-            <form id="search-form"> 
+        <div className="panel chats-panel">
+            <form id="search-form" className="search-form"> 
                 <input 
+                    className="input"
                     type="search" 
                     id="query"
                     name="q" 
@@ -104,28 +105,58 @@ const Chats = memo((props: ChatsProps) => {
                     }}
                 />
             </form>
-            <ul>
+            <ul className="list">
                 {query.length < 2 ?
                         chats.length > 0 ?
                         chats.map(chat => (
-                            <li key={chat.id}>
-                                {chat.name.replace(authData?.username!, "")}
-                                <button onClick={() => fetchChat(chat.id)}>Open Chat</button>
-                                <button onClick={() => handleChatDeletion(chat.id)} >X</button>
+                            <li key={chat.id} className="list-item list-item--chat">
+                                <span className="chat-name">
+                                  {chat.name.replace(authData?.username!, "")}
+                                </span>
+                                <div className="chat-actions">
+                                  <button
+                                    className="btn btn-ghost btn-small"
+                                    onClick={() => fetchChat(chat.id)}
+                                  >
+                                    Open
+                                  </button>
+                                  <button
+                                    className="icon-button"
+                                    onClick={() => handleChatDeletion(chat.id)}
+                                    aria-label="Delete chat"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
                             </li>
                         ))
                         :
-                        <p>There are no existing chats. Please start a new one.</p>
+                        <p className="muted">There are no existing chats. Please start a new one.</p>
                     :
                     filteredChats.length > 0 ?
                         filteredChats.map(chat => (
-                            <li key={chat.id}>
-                                {chat.name.replace(authData?.username!, "")}
-                                <button onClick={() => fetchChat(chat.id)}>Open Chat</button>
-                                <button onClick={() => handleChatDeletion(chat.id)} >X</button>
+                            <li key={chat.id} className="list-item list-item--chat">
+                                <span className="chat-name">
+                                  {chat.name.replace(authData?.username!, "")}
+                                </span>
+                                <div className="chat-actions">
+                                  <button
+                                    className="btn btn-ghost btn-small"
+                                    onClick={() => fetchChat(chat.id)}
+                                  >
+                                    Open
+                                  </button>
+                                  <button
+                                    className="icon-button"
+                                    onClick={() => handleChatDeletion(chat.id)}
+                                    aria-label="Delete chat"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
                             </li>
                         )) :
-                        <p>No search results.</p>}
+                        <p className="muted">No search results.</p>}
             </ul>
         </div>
     );

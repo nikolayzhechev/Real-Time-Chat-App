@@ -9,12 +9,17 @@ function Home(): ReactElement {
     };
 
     return (
-        <div>
-            <h2>Real-time Chat Application</h2>
-            <button className='login_btn' onClick={() => handleClick('/login')}>Login</button>
-            <button className='register_btn' onClick={() => handleClick('/register')}>Register</button>
-        </div>
-    )
+        <section className="home-page">
+            <div className="card home-card">
+                <h2>Real-time Chat Application</h2>
+                <p className="home-subtitle">Simple, fast messaging between you and your contacts.</p>
+                <div className="home-actions">
+                    <button className='btn btn-primary' onClick={() => handleClick('/login')}>Login</button>
+                    <button className='btn btn-secondary' onClick={() => handleClick('/register')}>Register</button>
+                </div>
+            </div>
+        </section>
+    );
 };
 
 export default Home;

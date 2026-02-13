@@ -43,19 +43,55 @@ function Register(): ReactElement {
      };
 
     return (
-        <div>
-        <h2>Register</h2>
-        <form onSubmit={handleRegister}>
-          <label htmlFor="username">Enter your email and password to register:</label>
-          <input type="text" id="username" name="username" value={userName} onChange={handleChange} required placeholder="Username"/>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" required/>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" required/>
-          <input type="password" value={repeatPassword} onChange={e => setRepeatPassword(e.target.value)} placeholder="Repeat Password" required/>
-          {error && <p style={{ color: 'red' }}>{error}</p>}
-          <input type="submit" value="Register" />
-        </form>
-    </div>
-    )
+        <section className="auth-page">
+            <div className="card auth-card">
+                <h2>Register</h2>
+                <form className="form" onSubmit={handleRegister}>
+                  <label htmlFor="username" className="form-label">
+                    Enter your email and password to register:
+                  </label>
+                  <input
+                    className="input"
+                    type="text"
+                    id="username"
+                    name="username"
+                    value={userName}
+                    onChange={handleChange}
+                    required
+                    placeholder="Username"
+                  />
+                  <input
+                    className="input"
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="Email"
+                    required
+                  />
+                  <input
+                    className="input"
+                    type="password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="Password"
+                    required
+                  />
+                  <input
+                    className="input"
+                    type="password"
+                    value={repeatPassword}
+                    onChange={e => setRepeatPassword(e.target.value)}
+                    placeholder="Repeat Password"
+                    required
+                  />
+                  {error && <p className="form-error">{error}</p>}
+                  <button className="btn btn-primary" type="submit">
+                    Register
+                  </button>
+                </form>
+            </div>
+        </section>
+    );
 };
 
 export default Register;

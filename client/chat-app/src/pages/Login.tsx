@@ -37,16 +37,35 @@ function Login(): ReactElement {
     };
 
     return (
-        <div>
-            <h2>Login</h2>
-            <form onSubmit={handleLogin}>
-              <label htmlFor="username">Enter your email and password to login:</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" />
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" />
-              <input type="submit" value="Login" />
-            </form>
-        </div>
-    )
+        <section className="auth-page">
+            <div className="card auth-card">
+                <h2>Login</h2>
+                <form className="form" onSubmit={handleLogin}>
+                  <label htmlFor="login-email" className="form-label">
+                    Enter your email and password to login:
+                  </label>
+                  <input
+                    id="login-email"
+                    className="input"
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="Email"
+                  />
+                  <input
+                    className="input"
+                    type="password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="Password"
+                  />
+                  <button className="btn btn-primary" type="submit">
+                    Login
+                  </button>
+                </form>
+            </div>
+        </section>
+    );
 };
 
 export default Login;

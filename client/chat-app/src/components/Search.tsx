@@ -44,17 +44,18 @@ function Search<T>({collection, onResults}: SearchProps<T>) {
     if (error) return <p>{`Error during search ${error}`}</p>
 
     return (
-        <div>
-            <form id="search-form"> 
-            <input 
-                type="search" 
-                id="query"
-                 name="q" 
-                 placeholder={`Search ${collection}...`}
-                 onChange={(e) => setQuery(e.target.value)}
-            />
+        <div className="inline-search">
+            <form id="search-form" className="search-form"> 
+                <input 
+                    className="input"
+                    type="search" 
+                    id="query"
+                    name="q" 
+                    placeholder={`Search ${collection}...`}
+                    onChange={(e) => setQuery(e.target.value)}
+                />
             </form>
-            {loading && <p>Searching...</p>}
+            {loading && <p className="muted">Searching...</p>}
         </div>
     )
 }

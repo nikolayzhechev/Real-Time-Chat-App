@@ -141,9 +141,10 @@ const Users = memo(({ onNewChatCreated, onFetchedUsers }: UsersProps) => {
     if (error) return <p>Error: {error}</p>;
 
     return (
-        <div>
-          <form id="search-form"> 
+        <div className="panel users-panel">
+          <form id="search-form" className="search-form"> 
             <input 
+                className="input"
                 type="search"
                 id="query"
                 name="q"
@@ -154,12 +155,12 @@ const Users = memo(({ onNewChatCreated, onFetchedUsers }: UsersProps) => {
                 }}
             />
           </form>
-          <p>Users:</p>
-            <ul>
+          <p className="section-label">Users</p>
+            <ul className="list">
               {query.length < 2 ? usersList.map(user => (
-                <li key={user.id}>
-                  <label>
-                    {user.username}
+                <li key={user.id} className="list-item list-item--user">
+                  <label className="checkbox-row">
+                    <span>{user.username}</span>
                     <input
                       type="checkbox"
                       name="usersCheckbox"
@@ -169,46 +170,65 @@ const Users = memo(({ onNewChatCreated, onFetchedUsers }: UsersProps) => {
                         handleCheckboxChange(user.id);
                       }}/>
                   </label>
-                  <button onClick={() => {
-                    handleChatCreation(user, false);
-                  }}>Start Chat</button>
+                  <button
+                    className="btn btn-ghost btn-small"
+                    onClick={() => {
+                      handleChatCreation(user, false);
+                    }}
+                  >
+                    Start Chat
+                  </button>
                 </li>
               ))
               :
               filteredUsersList.length > 0 ? filteredUsersList.map(user => (
-                <li key={user.id}>
-                  <p>{user.username}</p>
-                  <button onClick={() => {
-                    handleChatCreation(user, false);
-                  }}>Start Chat</button>
+                <li key={user.id} className="list-item list-item--user">
+                  <span>{user.username}</span>
+                  <button
+                    className="btn btn-ghost btn-small"
+                    onClick={() => {
+                      handleChatCreation(user, false);
+                    }}
+                  >
+                    Start Chat
+                  </button>
                 </li>
-              )) : <p>No search results.</p>}
+              )) : <p className="muted">No search results.</p>}
             </ul>
-            <ul>
+            <ul className="pill-list">
             {selectedUsers.map((user) => (
-              <li key={user.id}>
-                {user.username}
-                <button onClick={(e) => {
-                  removeUser(user);
-                  handleCheckboxChange(user.id);
-                }}>x</button>
+              <li key={user.id} className="pill">
+                <span>{user.username}</span>
+                <button
+                  className="pill-remove"
+                  onClick={(e) => {
+                    removeUser(user);
+                    handleCheckboxChange(user.id);
+                  }}
+                >
+                  ×
+                </button>
               </li>
               ))}
             </ul>
-            <div>
-              <label>Chat Name: </label>
+            <div className="users-group-create">
+              <label className="form-label">Chat Name</label>
               <input
+                className="input"
                 type="text"
                 placeholder="Enter chat name"
                 value={chatName}
                 onChange={(e) => setChatName(e.target.value)}
-              ></input>
+              />
               <button
+                className="btn btn-primary btn-small"
                 onClick={() => {
                   handleGroupChatCreation(chatName, selectedUsers.map(x => x.id), true);
                 }}
                 disabled={chatName === "" || selectedUsers.length < 1 ? true : false}
-              >New Chat</button> 
+              >
+                New Chat
+              </button> 
             </div>
         </div>
     )

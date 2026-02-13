@@ -20,26 +20,54 @@ const NavBar: React.FC = () => {
     };
   
     return (
-        <div>
-            {
-                isAuthenticated()
-                    ?
-                <div>
-                    <p>Welcome, {authData?.username}!</p>
-                    <ul>
-                        <li><button><NavLink to="/chat">Chat</NavLink></button></li>
-                        <li><button onClick={handleLogout}>Logout</button></li>
-                        <li><button><NavLink to="/profile">Profile</NavLink></button></li>
-                    </ul>
+        <header className="navbar">
+            {isAuthenticated() ? (
+                <div className="navbar-inner">
+                    <div className="navbar-brand">
+                        <span className="navbar-title">RealTime Chat</span>
+                        <span className="navbar-user">Welcome, {authData?.username}!</span>
+                    </div>
+                    <nav>
+                        <ul className="navbar-links">
+                            <li>
+                                <NavLink to="/chat" className="nav-link">
+                                    Chat
+                                </NavLink>
+                            </li>
+                            <li>
+                                <button className="btn btn-ghost" onClick={handleLogout}>
+                                    Logout
+                                </button>
+                            </li>
+                            <li>
+                                <NavLink to="/profile" className="nav-link">
+                                    Profile
+                                </NavLink>
+                            </li>
+                        </ul>
+                    </nav>
                 </div>
-                    :
-                <ul>
-                    <li><button><NavLink to="/login">Login</NavLink></button></li>
-                    <li><button><NavLink to="/register">Register</NavLink></button></li>
-                </ul>
-            }
-        </div>
-    )
+            ) : (
+                <nav className="navbar-inner">
+                    <div className="navbar-brand">
+                        <span className="navbar-title">RealTime Chat</span>
+                    </div>
+                    <ul className="navbar-links">
+                        <li>
+                            <NavLink to="/login" className="nav-link">
+                                Login
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink to="/register" className="nav-link">
+                                Register
+                            </NavLink>
+                        </li>
+                    </ul>
+                </nav>
+            )}
+        </header>
+    );
 };
 
 export default NavBar;
