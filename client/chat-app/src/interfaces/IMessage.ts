@@ -6,7 +6,9 @@ interface IMessage {
     username: string,
     content: string,
     sentAt: Date,
-    attachments: IAttachment[]
+    attachments: IAttachment[],
+    latitude: number | null,
+    longitude: number | null
 }
 
 export default IMessage;
