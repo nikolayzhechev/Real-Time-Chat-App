@@ -11,5 +11,7 @@
         public DateTime SentAt { get; set; }
         public bool IsRead { get; set; }
         public ICollection<Attachment> Attachments { get; set; }
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
     }
 }

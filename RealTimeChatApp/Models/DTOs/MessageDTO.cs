@@ -8,5 +8,7 @@
         public string Content { get; set; }
         public DateTime SentAt { get; set; }
         public List<AttachmentDTO> Attachments { get; set; }
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
     }
 }

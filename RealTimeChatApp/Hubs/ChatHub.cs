@@ -48,6 +48,12 @@ namespace RealTimeChatApp.Hubs
                 Username = sender.Username,
                 Content = message.Content,
                 SentAt = message.SentAt,
+                Attachments = message.Attachments?.Select(a => new AttachmentDTO
+                {
+                    FileName = a.FileName,
+                    FileType = a.FileType,
+                    FileUrl = a.FileUrl
+                }).ToList()
             };
 
             try
@@ -63,6 +69,59 @@ namespace RealTimeChatApp.Hubs
                 throw new HubException("An unexpected error occurred while sending your message.", ex);
             }
         }
+
+        public async Task SendLocationMessage(int chatId, string username, double latitude, double longitude)
+        {
+            var senderId = int.Parse(Context.UserIdentifier);
+
+            var sender = new AppUser
+            {
+                Id = senderId,
+                Username = username,
+            };
+
+            var message = new Message
+            {
+                ChatId = chatId,
+                SenderId = senderId,
+                Content = $"Latitude: {latitude}, Longitude: {longitude}",
+                SentAt = DateTime.UtcNow,
+                Latitude = latitude,
+                Longitude = longitude
+            };
+
+            _dbContext.Messages.Add(message);
+            await _dbContext.SaveChangesAsync();
+
+            var messageDto = new MessageDTO
+            {
+                Username = sender.Username,
+                Content = message.Content,
+                SentAt = message.SentAt,
+                Attachments = message.Attachments?.Select(a => new AttachmentDTO
+                {
+                    FileName = a.FileName,
+                    FileType = a.FileType,
+                    FileUrl = a.FileUrl
+                }).ToList(),
+                Latitude = latitude,
+                Longitude = longitude
+            };
+
+            try
+            {
+                // Broadcast to clients in the chat
+                await AddToGroup(chatId.ToString());
+                await Clients.Group(chatId.ToString()).SendAsync("ReceiveLocationMessage", messageDto);
+
+                _logger.LogInformation("New location message received from {User}: {Message}", username, message.Content);
+            }
+            catch (Exception ex)
+            {
+                throw new HubException("An unexpected error occurred while sending your location message.", ex);
+            }
+        }
+
         public async Task AddToGroup(string groupName)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
