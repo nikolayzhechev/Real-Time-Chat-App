@@ -46,10 +46,7 @@ function Chat (): ReactElement {
         if (currentMessageContent.trim()) {
           console.log("Sending message:", { username, content: currentMessageContent });
 
-          let uploadedAttachments: IAttachment[] | null = null; 
-          if (attachments) {
-            uploadedAttachments = await sendAttachment();
-          }
+          await sendAttachment();
 
           try {
             await connection?.invoke("SendMessage",
@@ -124,6 +121,63 @@ function Chat (): ReactElement {
       }
 
       return null;
+    };
+
+    const sendLocationMessage = async (latitude: number, longitude: number): Promise<void> => {
+      try {
+        await connection?.invoke("SendLocationMessage", activeChat?.id, username, latitude, longitude);
+
+        if (activeChat?.id) {
+          try {
+            const res: Response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/chats/chat/${activeChat.id}`, {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`
+              }
+            });
+
+            if (res.ok) {
+              const updatedChat: IChat = await res.json();
+              setActiveChat(updatedChat);
+              setChats(prev => prev.map(c => c.id === updatedChat.id ? updatedChat : c));
+              setMessages(prev => {
+                const existingKeys = new Set(prev.map(m => `${m.chatId}_${m.sentAt}`));
+                const merged = [...prev];
+                for (const m of updatedChat.messages) {
+                  const key = `${m.chatId}_${m.sentAt}`;
+                  if (!existingKeys.has(key)) {
+                    merged.push(m);
+                  }
+                }
+                return merged.sort((a, b) => Date.parse(a.sentAt.toString()) - Date.parse(b.sentAt.toString()));
+              });
+            } else {
+              console.log("Failed to fetch updated chat after sending location:", res.status);
+            }
+          } catch (err: any) {
+            console.warn("Error fetching updated chat:", err);
+          }
+        }
+
+      } catch (error: any) {
+        console.log("Location message not sent, error:", error);
+        setError(error.message);
+      }
+      finally {
+        setCurrentMessageContent("");
+        setAttachments(null);
+        handleFileReset();
+      }
+    };
+
+    const handleShareLocation = (): void => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((position) => {
+          const latitude = position.coords.latitude;
+          const longitude = position.coords.longitude;
+
+          sendLocationMessage(latitude, longitude);
+        });
+      }
     };
 
     const handleSelectChat = useCallback((chat: IChat): void => {
@@ -271,6 +325,12 @@ function Chat (): ReactElement {
                         }}
                       >
                         {isEditingTitle ? "Save" : "Edit"}
+                      </button>
+                      <button
+                        className="btn btn-secondary"
+                        onClick={handleShareLocation}
+                      >
+                        Share Location
                       </button>
                     </div>
 
