@@ -69,14 +69,18 @@ function Chat (): ReactElement {
         if (currentMessageContent.trim()) {
           console.log("Sending message:", { username, content: currentMessageContent });
 
-          await sendAttachment();
-
           try {
-            await connection?.invoke("SendMessage",
+            const messageDTO: IMessage | undefined = await connection?.invoke("SendMessage",
               activeChat?.id,
               username,
               currentMessageContent
             );
+
+            if (messageDTO) {
+              await sendAttachment(messageDTO?.id);
+            } else {
+              console.log("Message Id is not returned from Hub.")
+            }
 
             if (activeChat?.id) {
               try {
@@ -114,7 +118,7 @@ function Chat (): ReactElement {
         }
     };
 
-    const sendAttachment = async (): Promise<IAttachment[] | null> => {
+    const sendAttachment = async (messageId: number): Promise<IAttachment[] | null> => {
       const data = new FormData();
 
       if (attachments !== null) {
@@ -124,7 +128,7 @@ function Chat (): ReactElement {
           data.append('files', file, file.name)
         }
 
-        const response: Response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/chats/chat/${activeChat?.id}/attachment`, {
+        const response: Response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/chats/chat/${activeChat?.id}/attachment?messageId=${messageId}`, {
           method: 'POST',
           body: data,
           headers: {
