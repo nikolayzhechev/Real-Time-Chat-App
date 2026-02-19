@@ -30,17 +30,40 @@ function Chat (): ReactElement {
     const username: string | undefined = authData?.username;
     const connection = getConnection();
     const inputFile: any = useRef(null);
+    const messagesContainerRef: any = useRef(null);
 
     useEffect(() => {
-        const handler: any = connection?.on("ReceiveMessage", (message: IMessage): void => {
-          setMessages(prevMessages => [...prevMessages, message]);
-        });
+        if (!connection) return;
+
+        const handler: any = (message: IMessage): void => {
+          if (message.chatId === activeChat?.id) {
+            setMessages(prevMessages => {
+              const exist: boolean = prevMessages.some(
+                m => m.id === message.id ||
+                (m.id === message.id && m.sentAt === message.sentAt)
+              );
+              return exist ? prevMessages : [...prevMessages, message];
+            });
+          }
+        };
 
         connection?.on("ReceiveMessage", handler);
         return () => {
           connection?.off("ReceiveMessage", handler); // Clean up when the component unmounts or re-renders
         };
-    }, [activeChat, attachments]);
+    }, [connection]);
+
+    useEffect(() => {
+      if (messagesContainerRef.current) {
+        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      }
+    }, [messages]);
+
+    useEffect(() => {
+      if (messagesContainerRef.current && activeChat) {
+        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      }
+    }, [activeChat]);
 
     const sendMessage = async (): Promise<void> => {
         if (currentMessageContent.trim()) {
@@ -67,17 +90,9 @@ function Chat (): ReactElement {
                   const updatedChat: IChat = await res.json();
                   setActiveChat(updatedChat);
                   setChats(prev => prev.map(c => c.id === updatedChat.id ? updatedChat : c));
-                  setMessages(prev => {
-                    const existingKeys = new Set(prev.map(m => `${m.chatId}_${m.sentAt}`));
-                    const merged = [...prev];
-                    for (const m of updatedChat.messages) {
-                      const key = `${m.chatId}_${m.sentAt}`;
-                      if (!existingKeys.has(key)) {
-                        merged.push(m);
-                      }
-                    }
-                    return merged.sort((a, b) => Date.parse(a.sentAt.toString()) - Date.parse(b.sentAt.toString()));
-                  });
+                  setMessages(updatedChat.messages.sort(
+                    (a, b) => Date.parse(a.sentAt.toString()) - Date.parse(b.sentAt.toString())
+                  ));
                 } else {
                   console.log("Failed to fetch updated chat after sending message:", res.status);
                 }
@@ -139,17 +154,9 @@ function Chat (): ReactElement {
               const updatedChat: IChat = await res.json();
               setActiveChat(updatedChat);
               setChats(prev => prev.map(c => c.id === updatedChat.id ? updatedChat : c));
-              setMessages(prev => {
-                const existingKeys = new Set(prev.map(m => `${m.chatId}_${m.sentAt}`));
-                const merged = [...prev];
-                for (const m of updatedChat.messages) {
-                  const key = `${m.chatId}_${m.sentAt}`;
-                  if (!existingKeys.has(key)) {
-                    merged.push(m);
-                  }
-                }
-                return merged.sort((a, b) => Date.parse(a.sentAt.toString()) - Date.parse(b.sentAt.toString()));
-              });
+              setMessages(updatedChat.messages.sort(
+                (a, b) => Date.parse(a.sentAt.toString()) - Date.parse(b.sentAt.toString())
+              ));
             } else {
               console.log("Failed to fetch updated chat after sending location:", res.status);
             }
@@ -183,6 +190,7 @@ function Chat (): ReactElement {
     const handleSelectChat = useCallback((chat: IChat): void => {
         setActiveChat(chat);
         setChatTitle(chat.name.replace(authData?.username!, ""));
+        setMessages(chat.messages);
 
         try {
           connection?.invoke("AddToGroup", chat.id.toString());
@@ -454,9 +462,9 @@ function Chat (): ReactElement {
                       )}
                     </div>
 
-                    <div className="chat-messages">
-                      {activeChat.messages.map((msg) => (
-                        <Message key={msg.chatId ?? msg.sentAt} msg={msg} />
+                    <div className="chat-messages" ref={messagesContainerRef}>
+                      {messages.reverse().map((msg) => (
+                        <Message key={msg.id ?? msg.sentAt} msg={msg} />
                       ))}
                     </div>
                   </div>
