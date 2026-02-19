@@ -225,7 +225,7 @@ namespace RealTimeChatApp.Controllers
         // POST: api/chat/attachment
         [HttpPost("chat/{chatId}/attachment")]
         [Authorize]
-        public async Task<IActionResult> AttachFile(List<IFormFile> files, int chatId)
+        public async Task<IActionResult> AttachFile(List<IFormFile> files, int chatId, [FromQuery] int messageId)
         {
             var user = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
@@ -255,8 +255,8 @@ namespace RealTimeChatApp.Controllers
 
             try
             {
-                int messageId = _dBcontext.Messages
-                    .Where(m => m.ChatId == chatId && m.SenderId.ToString() == user)
+                int msgId = _dBcontext.Messages
+                    .Where(m => m.ChatId == chatId && m.SenderId.ToString() == user && m.Id == messageId)
                     .OrderByDescending(m => m.SentAt)
                     .Select(m => m.Id)
                     .FirstOrDefault();
@@ -264,7 +264,7 @@ namespace RealTimeChatApp.Controllers
                 _dBcontext.Attachments.AddRange(files.Select(f => new Attachment
                 {
                     ChatId = chatId,
-                    MessageId = messageId,
+                    MessageId = msgId,
                     FileName = f.FileName,
                     FileType = f.ContentType,
                     FileUrl = Path.Combine("Uploads", chatId.ToString(), f.FileName),

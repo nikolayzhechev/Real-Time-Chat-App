@@ -17,7 +17,7 @@ namespace RealTimeChatApp.Hubs
             _dbContext = dbContext;
         }
 
-        public async Task SendMessage(int chatId, string username, string messageContent)
+        public async Task<MessageDTO> SendMessage(int chatId, string username, string messageContent)
         {
             if (string.IsNullOrWhiteSpace(messageContent))
             {
@@ -45,6 +45,7 @@ namespace RealTimeChatApp.Hubs
 
             var messageDto = new MessageDTO
             {
+                Id = message.Id,
                 Username = sender.Username,
                 Content = message.Content,
                 SentAt = message.SentAt,
@@ -63,11 +64,14 @@ namespace RealTimeChatApp.Hubs
                 await Clients.Group(chatId.ToString()).SendAsync("ReceiveMessage", messageDto);
 
                 _logger.LogInformation("New message received from {User}: {Message}", username, messageContent);
+
+                return messageDto;
             }
             catch (Exception ex)
             {
                 throw new HubException("An unexpected error occurred while sending your message.", ex);
             }
+
         }
 
         public async Task SendLocationMessage(int chatId, string username, double latitude, double longitude)
