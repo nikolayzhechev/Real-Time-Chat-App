@@ -1,6 +1,7 @@
 import IAttachment from "./IAttachment";
 
 interface IMessage {
+    id: number,
     chatId: number,
     senderId: number,
     username: string,
