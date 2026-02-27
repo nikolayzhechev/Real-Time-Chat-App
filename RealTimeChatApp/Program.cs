@@ -75,6 +75,8 @@ internal class Program
                 };
             });
 
+        builder.Services.AddScoped<IEmailService, EmailService>();
+
         builder.Services.AddAuthorization();
 
         builder.Services.AddScoped<IAuthService, AuthService>();

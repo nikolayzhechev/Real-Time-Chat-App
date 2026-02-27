@@ -463,6 +463,7 @@
   overflow-y: auto;
   padding-right: 0.25rem;
   display: flex;
+  /* flex-direction: column-reverse; */
   flex-direction: column;
   gap: 0.4rem;
 }
