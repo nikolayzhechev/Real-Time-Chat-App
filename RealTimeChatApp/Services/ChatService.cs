@@ -164,7 +164,9 @@ namespace RealTimeChatApp.Services
                                FileType = a.FileType,
                                FileUrl = a.FileUrl,
                                MessageId = a.MessageId
-                           }).ToList()
+                           }).ToList(),
+                       Latitude = m.Latitude,
+                       Longitude = m.Longitude
                    })
                    .ToList(),
                 CreatedAt = chat.CreatedAt,
