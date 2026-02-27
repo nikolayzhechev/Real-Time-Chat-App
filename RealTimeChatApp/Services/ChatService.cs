@@ -105,10 +105,11 @@ namespace RealTimeChatApp.Services
 
         public async Task<ChatDTO> GetChat(int chatId)
         {
+            int limit = 20;
             var chat = await _dBcontext.Chats
                 .Include(c => c.ChatUsers)
                     .ThenInclude(c => c.User)
-                .Include(chat => chat.Messages)
+                .Include(chat => chat.Messages.OrderByDescending(m => m.SentAt).Take(limit))
                 .Include(c => c.Attachments)
                 //.Include(c => c.Messages)
                 .AsNoTracking()
@@ -151,6 +152,7 @@ namespace RealTimeChatApp.Services
                    .OrderBy(m => m.SentAt)
                    .Select(m => new MessageDTO
                    {
+                       Id = m.Id,
                        SenderId = m.SenderId,
                        Username = _dBcontext.AppUsers.Where(u => u.Id == m.SenderId).Select(u => u.Username).FirstOrDefault(),
                        Content = m.Content,

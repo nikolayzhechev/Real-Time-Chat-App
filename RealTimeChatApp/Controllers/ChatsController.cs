@@ -47,6 +47,41 @@ namespace RealTimeChatApp.Controllers
             return Ok(chatDto);
         }
 
+        [HttpGet("chat/{id}/messages")]
+        [Authorize]
+        public async Task<ActionResult<MessageDTO>> GetMessages(int id, [FromQuery] int? beforeMessageId, [FromQuery] int limit = 20)
+        {
+            limit = Math.Min(limit, 50);
+
+            IQueryable<Message> query = _dBcontext.Messages
+                .AsNoTracking()
+                .Where(m => m.ChatId == id);
+
+            if (beforeMessageId.HasValue)
+            {
+                query = query.Where(m => m.Id < beforeMessageId.Value);
+            }
+
+            var messages = await query
+                .OrderByDescending(m => m.Id)
+                .Take(limit)
+                .ToListAsync();
+
+            messages.Reverse();
+
+            var nextCursor = messages.Any()
+                ? messages.First().Id
+                : (int?)null;
+
+            return Ok(new
+            {
+                messages,
+                nextCursor,
+                hasMore = messages.Count == limit
+            });
+        }
+
+
         // PATCH: api/chat/2
         [HttpPatch("chat/{id}")]
         [Authorize]

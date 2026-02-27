@@ -27,10 +27,13 @@ function Chat (): ReactElement {
     const [chatTitle, setChatTitle] = useState<string>("");
     const [isEditingTitle, setIsEditingTitle] = useState<boolean>(false);
     const [attachments, setAttachments] = useState<FileList | null>(null);
+    const [msgCursor, setMsgCursor] = useState<number | null>(null);
+    const [hasMoreMessages, setHasMoreMessages] = useState<boolean>(true);
     const username: string | undefined = authData?.username;
     const connection = getConnection();
     const inputFile: any = useRef(null);
-    const messagesContainerRef: any = useRef(null);
+    const messagesContainerRef: any= useRef(null);
+    const msgLimit: number = 20;
 
     useEffect(() => {
         if (!connection) return;
@@ -52,12 +55,6 @@ function Chat (): ReactElement {
           connection?.off("ReceiveMessage", handler); // Clean up when the component unmounts or re-renders
         };
     }, [connection]);
-
-    useEffect(() => {
-      if (messagesContainerRef.current) {
-        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-      }
-    }, [messages]);
 
     useEffect(() => {
       if (messagesContainerRef.current && activeChat) {
@@ -114,6 +111,8 @@ function Chat (): ReactElement {
             setCurrentMessageContent("");
             setAttachments(null);
             handleFileReset();
+            setMsgCursor(null);
+            setHasMoreMessages(true);
           }
         }
     };
@@ -195,6 +194,8 @@ function Chat (): ReactElement {
         setActiveChat(chat);
         setChatTitle(chat.name.replace(authData?.username!, ""));
         setMessages(chat.messages);
+        setMsgCursor(() => null);
+        setHasMoreMessages(() => true);
 
         try {
           connection?.invoke("AddToGroup", chat.id.toString());
@@ -281,6 +282,46 @@ function Chat (): ReactElement {
         }
     };
 
+    const handleScroll = async () => {
+      const { scrollTop } = messagesContainerRef.current
+      const top = scrollTop === 0;
+
+        if (top) {
+          if (activeChat) {
+            const firstMessage = activeChat.messages[0];
+
+            if (activeChat.messages.length >= msgLimit && hasMoreMessages) {
+              try {
+                const response = await fetch(
+                  `${process.env.REACT_APP_API_BASE_URL}/api/chats/chat/${activeChat.id}/messages?beforeMessageId=${msgCursor === null ? firstMessage.id : msgCursor}&limit=${msgLimit}`, {
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${localStorage.getItem("token")}`
+                    },
+                  });
+                  
+                  if (!response.ok) {
+                    throw new Error(`Failed to fetch messages: ${response.status}`);
+                  }
+  
+                  const messages: any = await response.json();
+                  console.log(messages.nextCursor)
+                  setMessages((prev) => [...messages.messages, ...prev]);
+                  setMsgCursor(messages.nextCursor);
+                  setHasMoreMessages(messages.hasMore);
+              } catch (err: any){
+                console.log(err);
+                setError(err);
+              }
+            } else {
+
+            }
+          } else {
+            console.log("Unable to retreive messages. No active chat.")
+          }
+        }
+    };
+
     if (error) return <p>Error: {error}</p>
 
     try {
@@ -294,6 +335,7 @@ function Chat (): ReactElement {
                       setChats(prev => [...prev, newChat]);
                       setChatRefreshTrigger(prev => prev + 1);
                       setActiveChat(newChat);
+                      setMessages(newChat.messages);
                     }}
                     onFetchedUsers={(users) => {
                       setActiveUsers(users);
@@ -465,8 +507,7 @@ function Chat (): ReactElement {
                         </div>
                       )}
                     </div>
-
-                    <div className="chat-messages" ref={messagesContainerRef}>
+                    <div className="chat-messages" ref={messagesContainerRef} onScroll={handleScroll}>
                       {messages.reverse().map((msg) => (
                         <Message key={msg.id ?? msg.sentAt} msg={msg} />
                       ))}

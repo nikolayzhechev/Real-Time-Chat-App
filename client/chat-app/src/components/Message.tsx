@@ -2,7 +2,6 @@ import Attachment from "./Attachment";
 import IMessage from "../interfaces/IMessage";
 
 function Message({ msg }: { msg: IMessage }) {
-  {console.log(msg.latitude)}
   if (msg.latitude && msg.longitude) {
     const url = `https://www.google.com/maps?q=${msg.latitude},${msg.longitude}`;
     return (
